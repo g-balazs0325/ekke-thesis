@@ -1,0 +1,51 @@
+@startuml uc0001_1
+skinparam RectangleBorderThickness 0
+left to right direction
+
+actor :Felhasználó: as aUser
+
+package Szoftver as ucs {
+    usecase (1.\nKamera mozgatása) as ucMoveCamera
+    usecase (2.\nMűvelet elvégzése) as ucDoOperation
+    usecase (3.\nEszközök felsorolása) as ucListTools
+    usecase (4.\nEszköz kiválasztása) as ucSelectTool
+    usecase (5.\nAblakrész mozgatása) as ucMovePart
+    usecase (6.\nAblakrész kikötése) as ucDockPart
+    usecase (7.\nEszközbeállítások listázása) as ucListOptions
+    usecase (8.\nEszközbeállítás módosítása) as ucModifyOption
+
+    together {
+        actor :Vászon: as aCanvas
+        actor :Szerszámosláda: as aToolbox
+        actor ://Ablakrész//: as aPart /'abstract'/
+        actor :Eszközbeállítások: as aToolOpts
+    }
+}
+
+aToolbox -|> aPart /' vertikális összekötés '/
+aPart <|- aToolOpts
+
+ucListTools <..[norank] ucSelectTool : <<előköveteli>> /' [norank] csak dupla "hosszú" relációknál működik? '/
+ucListOptions <..[norank] ucModifyOption : <<előköveteli>>
+ucListOptions <..[norank] ucSelectTool : <<meghívja>>
+ucSelectTool <..[norank] ucDoOperation : <<előköveteli>>
+
+aUser ---- ucMoveCamera /' --: horizontális összekötés '/
+aUser ---- ucDoOperation /' ---/----: nagyobb távolság '/
+aUser ---[hidden]- ucListTools /' sorrend megtartásához egy rejtett kötést alkalmazunk '/
+aUser ---- ucSelectTool
+aUser ---- ucMovePart
+aUser ---- ucDockPart
+aUser ---[hidden]- ucListOptions
+aUser ---- ucModifyOption 
+
+ucMoveCamera -- aCanvas
+ucDoOperation -- aCanvas
+ucListTools -- aToolbox
+ucSelectTool -- aToolbox
+ucMovePart -- aPart
+ucDockPart -- aPart
+ucListOptions -- aToolOpts
+ucModifyOption -- aToolOpts
+
+@enduml
