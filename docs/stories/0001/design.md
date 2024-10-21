@@ -105,3 +105,13 @@
 | Alternatívák, kivételek |                                                                                                                                                                                                                                 |
 | Speciális követelmények |                                                                                                                                                                                                                                 |
 | Megjegyzések            |                                                                                                                                                                                                                                 |
+
+## Képernyőtervek
+
+### A vászon és az ablakrészek
+
+![A vászon és az ablakrészek](./umls/wireframes/exported/wf0001_main.png)
+
+### Ablakrész mozgatása
+
+![Ablakrész mozgatása](./umls/wireframes/exported/wf0001_dragging.png)
