@@ -2,7 +2,7 @@
 
 ## Hivatkozások:
 
-- **User Story issue**: #1
+- **User Story issue**: [link](https://github.com/g-balazs0325/ekke-thesis/issues/1)
 - **Fejlesztői megjegyzések**: [link](./dev_notes.md)
 - **Tesztesetek, elvégzett tesztek**: [link](./tests.md)
 
