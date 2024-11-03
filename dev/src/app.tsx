@@ -37,23 +37,29 @@ class MyApp extends React.Component {
   constructor(props: any) {
     super(props);
     this.canvasRef = React.createRef();
+
+    const canvas: HTMLCanvasElement = document.createElement("canvas");
+    canvas.width = canvas.height = 1024;
+    this.canvasRef.current = canvas;
+
     this.textureRef = React.createRef();
   }
 
   componentDidMount() {
     const canvas: HTMLCanvasElement = this.canvasRef.current;
+const size = canvas.width;
     const context = canvas.getContext("2d");
 
     context.fillStyle = "red";
-    context.fillRect(0, 0, 256, 256);
+    context.fillRect(0, 0, size, size);
 
     context.strokeStyle = "green";
     context.lineWidth = 5;
     context.lineCap = "round";
 
     context.beginPath();
-    for (let i = 0; i < 10; i++) {
-      context.lineTo(Math.random() * 256, Math.random() * 256);
+    for (let i = 0; i < 30; i++) {
+      context.lineTo(Math.random() * size, Math.random() * size);
     }
     context.closePath();
     context.stroke();
