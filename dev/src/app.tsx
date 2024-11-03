@@ -1,7 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import * as React from "react";
 import { createRoot } from "react-dom/client";
-import { CanvasTexture } from "three";
+import { CanvasTexture, createCanvasElement } from "three";
 
 /*const MyApp = () => {
   const myCanvasElement = React.useRef();
@@ -34,6 +34,10 @@ class MyApp extends React.Component {
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
   private textureRef: React.MutableRefObject<CanvasTexture>;
 
+  state = {
+    wf: false,
+  };
+
   constructor(props: any) {
     super(props);
     this.canvasRef = React.createRef();
@@ -47,7 +51,7 @@ class MyApp extends React.Component {
 
   componentDidMount() {
     const canvas: HTMLCanvasElement = this.canvasRef.current;
-const size = canvas.width;
+    const size = canvas.width;
     const context = canvas.getContext("2d");
 
     context.fillStyle = "red";
@@ -66,6 +70,8 @@ const size = canvas.width;
   }
 
   private initializeTexture(ref: CanvasTexture) {
+    if (ref == null) return;
+
     const texture = ref;
     const canvas: HTMLCanvasElement = this.canvasRef.current;
 
@@ -75,16 +81,23 @@ const size = canvas.width;
     this.textureRef.current = texture;
   }
 
+  private updateWf(value: boolean) {
+    this.setState({ wf: value });
+  }
+
   render() {
     return (
       <React.StrictMode>
-        <canvas ref={this.canvasRef} width={256} height={256} hidden />
-        <Canvas>
+        <Canvas
+          tabIndex={0}
+          onKeyDown={() => this.updateWf(true)}
+          onKeyUp={() => this.updateWf(false)}
+        >
           <directionalLight position={[0, 1, 0]} />
           <ambientLight intensity={0.5} />
           <mesh>
             <torusKnotGeometry />
-            <meshPhysicalMaterial>
+            <meshPhysicalMaterial wireframe={this.state.wf}>
               <canvasTexture
                 ref={(ref) => this.initializeTexture(ref)}
                 attach={"map"}
