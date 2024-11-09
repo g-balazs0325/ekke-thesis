@@ -11,10 +11,15 @@ import {
 } from "three";
 import BlankCanvasTexture from "./components/canvas/BlankCanvasTexture";
 import { OrbitControls } from "@react-three/drei";
+import { GUI } from "three/examples/jsm/libs/lil-gui.module.min";
 
 class MyApp extends React.Component {
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
   private textureRef: React.MutableRefObject<CanvasTexture>;
+
+  public albedoColor: Color = new Color("blue");
+  public roughnessIntensity: number = 0;
+  private gui: GUI;
 
   state = {
     wf: false,
@@ -24,6 +29,16 @@ class MyApp extends React.Component {
     super(props);
     this.canvasRef = React.createRef();
     this.textureRef = React.createRef();
+  }
+
+  componentDidMount(): void {
+    this.gui = new GUI();
+    this.gui.addColor(this, "albedoColor");
+    this.gui.add(this as MyApp, "roughnessIntensity", 0, 255, 1);
+  }
+
+  componentWillUnmount(): void {
+    this.gui.destroy();
   }
 
   render() {
@@ -90,6 +105,8 @@ class MyApp extends React.Component {
   }
 
   private onClick(e: ThreeEvent<MouseEvent>) {
+    if (e.delta != 0) return;
+
     const mesh = e.object as Mesh;
     if (!mesh) return;
     console.log(mesh);
@@ -110,11 +127,13 @@ class MyApp extends React.Component {
     const roughnessCanvas = material.roughnessMap as CanvasTexture;
     if (!(albedoCanvas && roughnessCanvas)) return;
 
-    this.paintFaceOnCanvasTexture(albedoCanvas, uvcoords, new Color("blue"));
+    this.paintFaceOnCanvasTexture(albedoCanvas, uvcoords, this.albedoColor);
+
+    const value = this.roughnessIntensity / 255;
     this.paintFaceOnCanvasTexture(
       roughnessCanvas,
       uvcoords,
-      new Color("black")
+      new Color(value, value, value)
     );
   }
 
