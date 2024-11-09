@@ -10,15 +10,18 @@ import {
   Vector2,
 } from "three";
 import BlankCanvasTexture from "./components/canvas/BlankCanvasTexture";
-import { OrbitControls } from "@react-three/drei";
+import { Environment, OrbitControls } from "@react-three/drei";
 import { GUI } from "three/examples/jsm/libs/lil-gui.module.min";
+
+import envmap from "./assets/hdris/studio_small_03_1k.hdr";
 
 class MyApp extends React.Component {
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
   private textureRef: React.MutableRefObject<CanvasTexture>;
 
   public albedoColor: Color = new Color("blue");
-  public roughnessIntensity: number = 0;
+  public roughnessIntensity: number = 255;
+  public metalnessIntensity: number = 0;
   private gui: GUI;
 
   state = {
@@ -35,6 +38,7 @@ class MyApp extends React.Component {
     this.gui = new GUI();
     this.gui.addColor(this, "albedoColor");
     this.gui.add(this as MyApp, "roughnessIntensity", 0, 255, 1);
+    this.gui.add(this as MyApp, "metalnessIntensity", 0, 255, 1);
   }
 
   componentWillUnmount(): void {
@@ -49,15 +53,22 @@ class MyApp extends React.Component {
           onKeyDown={() => this.updateWf(true)}
           onKeyUp={() => this.updateWf(false)}
         >
+          <React.Suspense fallback={null}>
+            <Environment background backgroundIntensity={0.9} files={envmap} />
+          </React.Suspense>
+
           <OrbitControls />
-          <directionalLight position={[0, 1, 0]} />
           <ambientLight intensity={0.5} />
 
           <mesh onClick={this.onClick.bind(this)}>
             <torusKnotGeometry />
-            <meshPhysicalMaterial wireframe={this.state.wf} roughness={1}>
+            <meshPhysicalMaterial
+              wireframe={this.state.wf}
+              roughness={1}
+              metalness={1}
+            >
               <BlankCanvasTexture
-                size={512}
+                size={2048}
                 color={"red"}
                 attach={"map"}
                 canvasRef={this.canvasRef}
@@ -65,9 +76,14 @@ class MyApp extends React.Component {
                 onInitialize={this.initializeCanvasTexture.bind(this)}
               />
               <BlankCanvasTexture
-                size={1024}
+                size={2048}
                 color={"white"}
                 attach={"roughnessMap"}
+              />
+              <BlankCanvasTexture
+                size={2048}
+                color={"black"}
+                attach={"metalnessMap"}
               />
             </meshPhysicalMaterial>
           </mesh>
@@ -125,15 +141,22 @@ class MyApp extends React.Component {
     const material = mesh.material as MeshPhysicalMaterial;
     const albedoCanvas = material.map as CanvasTexture;
     const roughnessCanvas = material.roughnessMap as CanvasTexture;
-    if (!(albedoCanvas && roughnessCanvas)) return;
+    const metalnessCanvas = material.metalnessMap as CanvasTexture;
+    if (!(albedoCanvas && roughnessCanvas && metalnessCanvas)) return;
 
     this.paintFaceOnCanvasTexture(albedoCanvas, uvcoords, this.albedoColor);
 
-    const value = this.roughnessIntensity / 255;
+    const valueR = this.roughnessIntensity / 255;
     this.paintFaceOnCanvasTexture(
       roughnessCanvas,
       uvcoords,
-      new Color(value, value, value)
+      new Color(valueR, valueR, valueR)
+    );
+    const valueM = this.metalnessIntensity / 255;
+    this.paintFaceOnCanvasTexture(
+      metalnessCanvas,
+      uvcoords,
+      new Color(valueM, valueM, valueM)
     );
   }
 
