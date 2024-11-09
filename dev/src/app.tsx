@@ -4,14 +4,13 @@ import { createRoot } from "react-dom/client";
 import {
   CanvasTexture,
   Color,
-  createCanvasElement,
-  Face,
   Float32BufferAttribute,
   Mesh,
   MeshPhysicalMaterial,
   Vector2,
 } from "three";
 import BlankCanvasTexture from "./components/canvas/BlankCanvasTexture";
+import { OrbitControls } from "@react-three/drei";
 
 class MyApp extends React.Component {
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
@@ -35,11 +34,13 @@ class MyApp extends React.Component {
           onKeyDown={() => this.updateWf(true)}
           onKeyUp={() => this.updateWf(false)}
         >
+          <OrbitControls />
           <directionalLight position={[0, 1, 0]} />
           <ambientLight intensity={0.5} />
+
           <mesh onClick={this.onClick.bind(this)}>
             <torusKnotGeometry />
-            <meshPhysicalMaterial wireframe={this.state.wf}>
+            <meshPhysicalMaterial wireframe={this.state.wf} roughness={1}>
               <BlankCanvasTexture
                 size={512}
                 color={"red"}
@@ -47,6 +48,11 @@ class MyApp extends React.Component {
                 canvasRef={this.canvasRef}
                 textureRef={(ref) => (this.textureRef.current = ref)}
                 onInitialize={this.initializeCanvasTexture.bind(this)}
+              />
+              <BlankCanvasTexture
+                size={1024}
+                color={"white"}
+                attach={"roughnessMap"}
               />
             </meshPhysicalMaterial>
           </mesh>
@@ -95,19 +101,21 @@ class MyApp extends React.Component {
 
     const indices = [e.face.a, e.face.b, e.face.c];
     let uvcoords: Vector2[] = [];
-    //let vcoords: number[] = [];
     indices.forEach((index) => {
       uvcoords.push(new Vector2(uvs.getX(index), uvs.getY(index)));
     });
 
     const material = mesh.material as MeshPhysicalMaterial;
-    const canvasTexture = material.map as CanvasTexture;
-    if (canvasTexture)
-      this.paintFaceOnCanvasTexture(
-        canvasTexture,
-        uvcoords,
-        new Color(0x0000ff)
-      );
+    const albedoCanvas = material.map as CanvasTexture;
+    const roughnessCanvas = material.roughnessMap as CanvasTexture;
+    if (!(albedoCanvas && roughnessCanvas)) return;
+
+    this.paintFaceOnCanvasTexture(albedoCanvas, uvcoords, new Color("blue"));
+    this.paintFaceOnCanvasTexture(
+      roughnessCanvas,
+      uvcoords,
+      new Color("black")
+    );
   }
 
   private paintFaceOnCanvasTexture(
