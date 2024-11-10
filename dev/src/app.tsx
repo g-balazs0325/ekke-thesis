@@ -11,11 +11,28 @@ import {
 } from "three";
 import BlankCanvasTexture from "./components/canvas/BlankCanvasTexture";
 import { Environment, OrbitControls } from "@react-three/drei";
-import { GUI } from "three/examples/jsm/libs/lil-gui.module.min";
+import {
+  GUI,
+  OptionController,
+} from "three/examples/jsm/libs/lil-gui.module.min";
 
-import envmap from "./assets/hdris/studio_small_03_1k.hdr";
+import env_studio from "./assets/hdris/studio_small_03_1k.hdr";
+import env_meadow from "./assets/hdris/meadow_2_1k.hdr";
+import env_sky from "./assets/hdris/kloofendal_48d_partly_cloudy_puresky_1k.hdr";
+import env_nightcity from "./assets/hdris/cobblestone_street_night_1k.hdr";
 
 class MyApp extends React.Component {
+  //private static hdris: string[] = [env_studio, env_meadow, env_sky, env_nightcity];
+  //private static hdri_names: string[] = ["Studio", "Meadows", "Sky", "City (night)"];
+
+  private static hdris: Map<string, string> = new Map<string, string>([
+    ["Studio", env_studio],
+    ["Meadows", env_meadow],
+    ["Sky", env_sky],
+    ["City (night)", env_nightcity],
+  ]);
+  private static current_hdri_name: string = "Studio";
+
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
   private textureRef: React.MutableRefObject<CanvasTexture>;
 
@@ -26,19 +43,39 @@ class MyApp extends React.Component {
 
   state = {
     wf: false,
+    hdri: env_studio,
+    hdri_background: true,
   };
 
   constructor(props: any) {
     super(props);
     this.canvasRef = React.createRef();
     this.textureRef = React.createRef();
+    this.state.hdri = MyApp.hdris.get(MyApp.current_hdri_name);
   }
 
   componentDidMount(): void {
     this.gui = new GUI();
-    this.gui.addColor(this, "albedoColor");
-    this.gui.add(this as MyApp, "roughnessIntensity", 0, 255, 1);
-    this.gui.add(this as MyApp, "metalnessIntensity", 0, 255, 1);
+
+    this.gui
+      .add<any, string>(MyApp, "current_hdri_name", [...MyApp.hdris.keys()])
+      .name("HDRI Theme")
+      .onChange((key) => {
+        const hdri: string = MyApp.hdris.get(key);
+        this.setState({ hdri: hdri });
+      });
+    this.gui
+      .add(this.state, "hdri_background")
+      .name("Use HDRI as background")
+      .onChange((value) => this.setState({ hdri_background: value }));
+
+    this.gui.addColor(this, "albedoColor").name("Albedo Color");
+    this.gui
+      .add(this as MyApp, "roughnessIntensity", 0, 255, 1)
+      .name("Roughness");
+    this.gui
+      .add(this as MyApp, "metalnessIntensity", 0, 255, 1)
+      .name("Metalness");
   }
 
   componentWillUnmount(): void {
@@ -54,7 +91,11 @@ class MyApp extends React.Component {
           onKeyUp={() => this.updateWf(false)}
         >
           <React.Suspense fallback={null}>
-            <Environment background backgroundIntensity={0.9} files={envmap} />
+            <Environment
+              background={this.state.hdri_background}
+              backgroundIntensity={0.9}
+              files={this.state.hdri}
+            />
           </React.Suspense>
 
           <OrbitControls />
