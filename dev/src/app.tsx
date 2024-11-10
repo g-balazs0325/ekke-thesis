@@ -45,7 +45,7 @@ class MyApp extends React.Component {
     this.gui.destroy();
   }
 
-  render() {
+  render(): React.ReactElement {
     return (
       <React.StrictMode>
         <Canvas
@@ -95,12 +95,15 @@ class MyApp extends React.Component {
   private initializeCanvasTexture(
     canvas: HTMLCanvasElement,
     texture: CanvasTexture
-  ) {
+  ): void {
     this.strokeCanvasRandomly(canvas, "green");
     texture.needsUpdate = true;
   }
 
-  private strokeCanvasRandomly(canvas: HTMLCanvasElement, strokeStyle: string) {
+  private strokeCanvasRandomly(
+    canvas: HTMLCanvasElement,
+    strokeStyle: string
+  ): void {
     const size = canvas.width;
     const context = canvas.getContext("2d");
 
@@ -116,11 +119,11 @@ class MyApp extends React.Component {
     context.stroke();
   }
 
-  private updateWf(value: boolean) {
+  private updateWf(value: boolean): void {
     this.setState({ wf: value });
   }
 
-  private onClick(e: ThreeEvent<MouseEvent>) {
+  private onClick(e: ThreeEvent<MouseEvent>): void {
     if (e.delta != 0) return;
 
     const mesh = e.object as Mesh;
@@ -164,7 +167,7 @@ class MyApp extends React.Component {
     texture: CanvasTexture,
     uvs: Vector2[],
     color: Color
-  ) {
+  ): void {
     if (uvs.length != 3)
       throw new Error("Given UV coordinates do not form a triangle.");
 

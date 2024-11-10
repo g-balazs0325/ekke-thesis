@@ -1,24 +1,18 @@
 import { CanvasTextureProps } from "@react-three/fiber";
-import React, {
-  Component,
-  ForwardedRef,
-  MutableRefObject,
-  Ref,
-  RefObject,
-} from "react";
-import { CanvasTexture, Color, ColorRepresentation } from "three";
+import React from "react";
+import { CanvasTexture, ColorRepresentation } from "three";
 
 interface BlankCanvasTextureProps extends CanvasTextureProps {
   size: number;
   color?: ColorRepresentation;
-  textureRef?: ForwardedRef<CanvasTexture>;
-  canvasRef?: ForwardedRef<HTMLCanvasElement>;
+  textureRef?: React.ForwardedRef<CanvasTexture>;
+  canvasRef?: React.ForwardedRef<HTMLCanvasElement>;
   onInitialize?: (canvas: HTMLCanvasElement, texture: CanvasTexture) => void;
 
   image?: undefined;
 }
 
-export class BlankCanvasTexture extends Component<BlankCanvasTextureProps> {
+export class BlankCanvasTexture extends React.Component<BlankCanvasTextureProps> {
   public static defaultProps = { color: "white" };
 
   private canvas: HTMLCanvasElement;
@@ -34,7 +28,17 @@ export class BlankCanvasTexture extends Component<BlankCanvasTextureProps> {
     this.canvas = canvas;
   }
 
-  private drawCanvasBase(canvas: HTMLCanvasElement) {
+  render(): React.ReactElement {
+    return (
+      <canvasTexture
+        image={this.canvas}
+        ref={(ref) => this.textureRefIsUpdated(ref)}
+        {...(this.props as CanvasTextureProps)}
+      />
+    );
+  }
+
+  private drawCanvasBase(canvas: HTMLCanvasElement): void {
     const { color } = this.props;
 
     const context = canvas.getContext("2d");
@@ -42,12 +46,12 @@ export class BlankCanvasTexture extends Component<BlankCanvasTextureProps> {
     context.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  private onInitialize(texture: CanvasTexture) {
+  private onInitialize(texture: CanvasTexture): void {
     const callback = this.props.onInitialize;
     if (callback) callback(this.canvas, texture);
   }
 
-  private textureRefIsUpdated(newTextureRef: CanvasTexture) {
+  private textureRefIsUpdated(newTextureRef: CanvasTexture): void {
     this.setRef(this.props.canvasRef, this.canvas);
     this.setRef(this.props.textureRef, newTextureRef);
 
@@ -57,20 +61,11 @@ export class BlankCanvasTexture extends Component<BlankCanvasTextureProps> {
     }
   }
 
-  private setRef<T>(ref: ForwardedRef<T>, value: T) {
+  //TODO: különszedni egy külön osztályba
+  private setRef<T>(ref: React.ForwardedRef<T>, value: T) {
     if (!ref) return;
     if (typeof ref === "function") ref(value);
     else ref.current = value;
-  }
-
-  render() {
-    return (
-      <canvasTexture
-        image={this.canvas}
-        ref={(ref) => this.textureRefIsUpdated(ref)}
-        {...(this.props as CanvasTextureProps)}
-      />
-    );
   }
 }
 
