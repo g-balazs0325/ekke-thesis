@@ -11,10 +11,7 @@ import {
 } from "three";
 import BlankCanvasTexture from "./components/canvas/BlankCanvasTexture";
 import { Environment, OrbitControls } from "@react-three/drei";
-import {
-  GUI,
-  OptionController,
-} from "three/examples/jsm/libs/lil-gui.module.min";
+import { GUI } from "three/examples/jsm/libs/lil-gui.module.min";
 
 import env_studio from "./assets/hdris/studio_small_03_1k.hdr";
 import env_meadow from "./assets/hdris/meadow_2_1k.hdr";
@@ -22,9 +19,6 @@ import env_sky from "./assets/hdris/kloofendal_48d_partly_cloudy_puresky_1k.hdr"
 import env_nightcity from "./assets/hdris/cobblestone_street_night_1k.hdr";
 
 class MyApp extends React.Component {
-  //private static hdris: string[] = [env_studio, env_meadow, env_sky, env_nightcity];
-  //private static hdri_names: string[] = ["Studio", "Meadows", "Sky", "City (night)"];
-
   private static hdris: Map<string, string> = new Map<string, string>([
     ["Studio", env_studio],
     ["Meadows", env_meadow],
@@ -55,25 +49,31 @@ class MyApp extends React.Component {
   }
 
   componentDidMount(): void {
+    this.initializeGUI();
+  }
+
+  private initializeGUI(): void {
     this.gui = new GUI();
 
-    this.gui
+    const folder_hdri = this.gui.addFolder("HDRI options");
+    folder_hdri
       .add<any, string>(MyApp, "current_hdri_name", [...MyApp.hdris.keys()])
-      .name("HDRI Theme")
+      .name("Theme")
       .onChange((key) => {
         const hdri: string = MyApp.hdris.get(key);
         this.setState({ hdri: hdri });
       });
-    this.gui
+    folder_hdri
       .add(this.state, "hdri_background")
       .name("Use HDRI as background")
       .onChange((value) => this.setState({ hdri_background: value }));
 
-    this.gui.addColor(this, "albedoColor").name("Albedo Color");
-    this.gui
+    const folder_brush = this.gui.addFolder("Brush options");
+    folder_brush.addColor(this, "albedoColor").name("Albedo Color");
+    folder_brush
       .add(this as MyApp, "roughnessIntensity", 0, 255, 1)
       .name("Roughness");
-    this.gui
+    folder_brush
       .add(this as MyApp, "metalnessIntensity", 0, 255, 1)
       .name("Metalness");
   }
