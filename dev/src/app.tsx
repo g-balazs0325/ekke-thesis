@@ -1,12 +1,14 @@
-import { Canvas, ThreeEvent } from "@react-three/fiber";
+import { Canvas, RootState } from "@react-three/fiber";
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import {
+  Camera,
   CanvasTexture,
   Color,
-  Float32BufferAttribute,
-  Mesh,
+  Material,
   MeshPhysicalMaterial,
+  MOUSE,
+  Scene,
   Vector2,
 } from "three";
 import BlankCanvasTexture from "./components/canvas/BlankCanvasTexture";
@@ -17,6 +19,9 @@ import env_studio from "./assets/hdris/studio_small_03_1k.hdr";
 import env_meadow from "./assets/hdris/meadow_2_1k.hdr";
 import env_sky from "./assets/hdris/kloofendal_48d_partly_cloudy_puresky_1k.hdr";
 import env_nightcity from "./assets/hdris/cobblestone_street_night_1k.hdr";
+import RaycastFaceSelector from "./core/painting/selectors/RaycastFaceSelector";
+import Selector from "./core/painting/selectors/Selector";
+import FaceData from "./core/painting/datastructures/FaceData";
 
 class MyApp extends React.Component {
   private static hdris: Map<string, string> = new Map<string, string>([
@@ -25,10 +30,14 @@ class MyApp extends React.Component {
     ["Sky", env_sky],
     ["City (night)", env_nightcity],
   ]);
-  private static current_hdri_name: string = "Studio";
+  private static currentHdriName: string = "Studio";
 
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
   private textureRef: React.MutableRefObject<CanvasTexture>;
+  private selector: Selector;
+
+  private scene: Scene;
+  private camera: Camera;
 
   public albedoColor: Color = new Color("blue");
   public roughnessIntensity: number = 255;
@@ -38,14 +47,14 @@ class MyApp extends React.Component {
   state = {
     wf: false,
     hdri: env_studio,
-    hdri_background: true,
+    useHdriAsBackground: true,
   };
 
   constructor(props: any) {
     super(props);
     this.canvasRef = React.createRef();
     this.textureRef = React.createRef();
-    this.state.hdri = MyApp.hdris.get(MyApp.current_hdri_name);
+    this.state.hdri = MyApp.hdris.get(MyApp.currentHdriName);
   }
 
   componentDidMount(): void {
@@ -55,25 +64,25 @@ class MyApp extends React.Component {
   private initializeGUI(): void {
     this.gui = new GUI();
 
-    const folder_hdri = this.gui.addFolder("HDRI options");
-    folder_hdri
+    const folderHdri = this.gui.addFolder("HDRI options");
+    folderHdri
       .add<any, string>(MyApp, "current_hdri_name", [...MyApp.hdris.keys()])
       .name("Theme")
       .onChange((key) => {
         const hdri: string = MyApp.hdris.get(key);
         this.setState({ hdri: hdri });
       });
-    folder_hdri
-      .add(this.state, "hdri_background")
+    folderHdri
+      .add(this.state, "useHdriAsBackground")
       .name("Use HDRI as background")
-      .onChange((value) => this.setState({ hdri_background: value }));
+      .onChange((value) => this.setState({ hdriBackground: value }));
 
-    const folder_brush = this.gui.addFolder("Brush options");
-    folder_brush.addColor(this, "albedoColor").name("Albedo Color");
-    folder_brush
+    const folderBrush = this.gui.addFolder("Brush options");
+    folderBrush.addColor(this, "albedoColor").name("Albedo Color");
+    folderBrush
       .add(this as MyApp, "roughnessIntensity", 0, 255, 1)
       .name("Roughness");
-    folder_brush
+    folderBrush
       .add(this as MyApp, "metalnessIntensity", 0, 255, 1)
       .name("Metalness");
   }
@@ -89,19 +98,27 @@ class MyApp extends React.Component {
           tabIndex={0}
           onKeyDown={() => this.updateWf(true)}
           onKeyUp={() => this.updateWf(false)}
+          onCreated={this.setSceneAndCamera.bind(this)}
+          onClick={this.onClick.bind(this)}
         >
           <React.Suspense fallback={null}>
             <Environment
-              background={this.state.hdri_background}
+              background={this.state.useHdriAsBackground}
               backgroundIntensity={0.9}
               files={this.state.hdri}
             />
           </React.Suspense>
 
-          <OrbitControls />
+          <OrbitControls
+            mouseButtons={{
+              LEFT: null,
+              MIDDLE: MOUSE.PAN,
+              RIGHT: MOUSE.ROTATE,
+            }}
+          />
           <ambientLight intensity={0.5} />
 
-          <mesh onClick={this.onClick.bind(this)}>
+          <mesh>
             <torusKnotGeometry />
             <meshPhysicalMaterial
               wireframe={this.state.wf}
@@ -131,6 +148,11 @@ class MyApp extends React.Component {
         </Canvas>
       </React.StrictMode>
     );
+  }
+
+  private setSceneAndCamera(state: RootState): void {
+    this.scene = state.scene;
+    this.camera = state.camera;
   }
 
   private initializeCanvasTexture(
@@ -164,57 +186,49 @@ class MyApp extends React.Component {
     this.setState({ wf: value });
   }
 
-  private onClick(e: ThreeEvent<MouseEvent>): void {
-    if (e.delta != 0) return;
+  private onClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+    let pointer = new Vector2();
+    pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-    const mesh = e.object as Mesh;
-    if (!mesh) return;
-    console.log(mesh);
+    if (!this.selector)
+      this.selector = new RaycastFaceSelector(this.scene, this.camera);
+    const hitFace = this.selector.selectFaces(pointer)[0];
+    if (!hitFace) return;
 
-    const geometry = mesh.geometry;
-    const uvs = geometry.attributes.uv as Float32BufferAttribute;
-    if (!uvs) return;
-    console.log(uvs);
-
-    const indices = [e.face.a, e.face.b, e.face.c];
-    let uvcoords: Vector2[] = [];
-    indices.forEach((index) => {
-      uvcoords.push(new Vector2(uvs.getX(index), uvs.getY(index)));
-    });
-
-    const material = mesh.material as MeshPhysicalMaterial;
-    const albedoCanvas = material.map as CanvasTexture;
-    const roughnessCanvas = material.roughnessMap as CanvasTexture;
-    const metalnessCanvas = material.metalnessMap as CanvasTexture;
-    if (!(albedoCanvas && roughnessCanvas && metalnessCanvas)) return;
-
-    this.paintFaceOnCanvasTexture(albedoCanvas, uvcoords, this.albedoColor);
+    this.paintFaceOnMaterial<MeshPhysicalMaterial>(
+      hitFace,
+      "map",
+      this.albedoColor
+    );
 
     const valueR = this.roughnessIntensity / 255;
-    this.paintFaceOnCanvasTexture(
-      roughnessCanvas,
-      uvcoords,
+    this.paintFaceOnMaterial<MeshPhysicalMaterial>(
+      hitFace,
+      "roughnessMap",
       new Color(valueR, valueR, valueR)
     );
     const valueM = this.metalnessIntensity / 255;
-    this.paintFaceOnCanvasTexture(
-      metalnessCanvas,
-      uvcoords,
+    this.paintFaceOnMaterial<MeshPhysicalMaterial>(
+      hitFace,
+      "metalnessMap",
       new Color(valueM, valueM, valueM)
     );
   }
 
-  private paintFaceOnCanvasTexture(
-    texture: CanvasTexture,
-    uvs: Vector2[],
+  private paintFaceOnMaterial<T extends Material>(
+    hitFace: FaceData,
+    map: keyof T,
     color: Color
-  ): void {
-    if (uvs.length != 3)
-      throw new Error("Given UV coordinates do not form a triangle.");
-
+  ) {
+    const material = hitFace.material as T;
+    if (!material) return;
+    const texture = material[map] as CanvasTexture;
+    if (!texture) return;
     const canvas = texture.image as HTMLCanvasElement;
     if (!canvas) return;
 
+    const uvs = [hitFace.a.uv, hitFace.b.uv, hitFace.c.uv];
     const [w, h] = [canvas.width, canvas.height];
     const context = canvas.getContext("2d");
 
