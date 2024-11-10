@@ -14,12 +14,12 @@ export default class RaycastFaceSelector implements Selector {
     this.camera = camera;
   }
 
-  selectFaces(normalizedPosition: Vector2): FaceData[] {
-    let rc = this.raycaster;
+  selectFaces(clientPosition: Vector2): FaceData[] {
+    const normalizedPosition = this.getNormalizedPosition(clientPosition);
+    const rc = this.raycaster;
 
     rc.setFromCamera(normalizedPosition, this.camera);
     const intersections = rc.intersectObject(this.root, true);
-    console.log(intersections);
 
     if (intersections.length == 0 || intersections[0].object! instanceof Mesh)
       return [];
@@ -27,5 +27,12 @@ export default class RaycastFaceSelector implements Selector {
     const mesh = intersections[0].object as Mesh;
     const originalFace = intersections[0].face;
     return [FaceData.createFromMesh(mesh, originalFace)];
+  }
+
+  private getNormalizedPosition(clientPosition: Vector2) : Vector2 {
+    return new Vector2(
+      (clientPosition.x / window.innerWidth) * 2 - 1,
+      -((clientPosition.y / window.innerHeight) * 2 - 1)
+    );
   }
 }

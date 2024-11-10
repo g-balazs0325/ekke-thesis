@@ -66,7 +66,7 @@ class MyApp extends React.Component {
 
     const folderHdri = this.gui.addFolder("HDRI options");
     folderHdri
-      .add<any, string>(MyApp, "current_hdri_name", [...MyApp.hdris.keys()])
+      .add<any, string>(MyApp, "currentHdriName", [...MyApp.hdris.keys()])
       .name("Theme")
       .onChange((key) => {
         const hdri: string = MyApp.hdris.get(key);
@@ -187,9 +187,7 @@ class MyApp extends React.Component {
   }
 
   private onClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
-    let pointer = new Vector2();
-    pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    const pointer = new Vector2(e.clientX, e.clientY);
 
     if (!this.selector)
       this.selector = new RaycastFaceSelector(this.scene, this.camera);
