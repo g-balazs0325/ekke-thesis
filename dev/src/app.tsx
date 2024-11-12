@@ -7,6 +7,7 @@ import {
   Color,
   Material,
   MeshPhysicalMaterial,
+  MeshStandardMaterial,
   MOUSE,
   Scene,
   Vector2,
@@ -14,14 +15,13 @@ import {
 import BlankCanvasTexture from "./components/canvas/BlankCanvasTexture";
 import { Environment, OrbitControls } from "@react-three/drei";
 import { GUI } from "three/examples/jsm/libs/lil-gui.module.min";
+import RaycastFaceSelector from "./core/painting/selectors/RaycastFaceSelector";
+import FacesPainter from "./core/painting/FacesPainter";
 
 import env_studio from "./assets/hdris/studio_small_03_1k.hdr";
 import env_meadow from "./assets/hdris/meadow_2_1k.hdr";
 import env_sky from "./assets/hdris/kloofendal_48d_partly_cloudy_puresky_1k.hdr";
 import env_nightcity from "./assets/hdris/cobblestone_street_night_1k.hdr";
-import RaycastFaceSelector from "./core/painting/selectors/RaycastFaceSelector";
-import Selector from "./core/painting/selectors/Selector";
-import FaceData from "./core/painting/datastructures/FaceData";
 
 class MyApp extends React.Component {
   private static hdris: Map<string, string> = new Map<string, string>([
@@ -34,7 +34,7 @@ class MyApp extends React.Component {
 
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
   private textureRef: React.MutableRefObject<CanvasTexture>;
-  private selector: Selector;
+  private painter: FacesPainter;
 
   private scene: Scene;
   private camera: Camera;
@@ -187,62 +187,26 @@ class MyApp extends React.Component {
   }
 
   private onClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
-    const pointer = new Vector2(e.clientX, e.clientY);
+    const clientPosition = new Vector2(e.clientX, e.clientY);
 
-    if (!this.selector)
-      this.selector = new RaycastFaceSelector(this.scene, this.camera);
-    const hitFace = this.selector.selectFaces(pointer)[0];
-    if (!hitFace) return;
+    if (!this.painter)
+      this.painter = new FacesPainter(
+        new RaycastFaceSelector(this.scene, this.camera),
+        null
+      );
 
-    this.paintFaceOnMaterial<MeshPhysicalMaterial>(
-      hitFace,
-      "map",
-      this.albedoColor
-    );
-
+    const painter = this.painter;
     const valueR = this.roughnessIntensity / 255;
-    this.paintFaceOnMaterial<MeshPhysicalMaterial>(
-      hitFace,
-      "roughnessMap",
-      new Color(valueR, valueR, valueR)
-    );
     const valueM = this.metalnessIntensity / 255;
-    this.paintFaceOnMaterial<MeshPhysicalMaterial>(
-      hitFace,
-      "metalnessMap",
-      new Color(valueM, valueM, valueM)
-    );
-  }
 
-  private paintFaceOnMaterial<T extends Material>(
-    hitFace: FaceData,
-    map: keyof T,
-    color: Color
-  ) {
-    const material = hitFace.material as T;
-    if (!material) return;
-    const texture = material[map] as CanvasTexture;
-    if (!texture) return;
-    const canvas = texture.image as HTMLCanvasElement;
-    if (!canvas) return;
-
-    const uvs = [hitFace.a.uv, hitFace.b.uv, hitFace.c.uv];
-    const [w, h] = [canvas.width, canvas.height];
-    const context = canvas.getContext("2d");
-
-    context.strokeStyle = context.fillStyle = color.getStyle();
-    context.lineWidth = 1;
-
-    context.beginPath();
-    context.moveTo(w * uvs[2].x, h * (1 - uvs[2].y));
-    for (let i = 0; i < 3; i++) {
-      context.lineTo(w * uvs[i].x, h * (1 - uvs[i].y));
-    }
-    context.closePath();
-    context.fill();
-    context.stroke();
-
-    texture.needsUpdate = true;
+    painter.beginPainting(clientPosition);
+    painter.setColor(this.albedoColor);
+    painter.paint<MeshStandardMaterial>("map");
+    painter.setColor(new Color(valueR, valueR, valueR));
+    painter.paint<MeshPhysicalMaterial>("roughnessMap");
+    painter.setColor(new Color(valueM, valueM, valueM));
+    painter.paint<MeshPhysicalMaterial>("metalnessMap");
+    painter.endPainting();
   }
 }
 
