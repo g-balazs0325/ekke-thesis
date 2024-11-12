@@ -23,18 +23,11 @@ export default class FacesPainter extends Painter {
         for (let i = 0; i < faces.length; i++) {
             const face = faces[i];
             const material = face.material as T;
-            if(!material) continue;
 
             if(currentMaterial != material) {
-                if(material[textureKey] !instanceof CanvasTexture)
-                    continue;
-
                 currentMaterial = material;
                 texture = material[textureKey] as CanvasTexture;
-                if(!texture) continue;
                 canvas = texture.image as HTMLCanvasElement;
-                if(!canvas) continue;
-                
                 context = canvas.getContext("2d");
             }
 

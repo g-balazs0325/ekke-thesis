@@ -39,17 +39,29 @@ export default abstract class Painter {
         this.cachedFaces = null;
     }
 
+
+    paint<T extends Material>(textureKey: TextureOfMaterial<T>): void {
+        this.checkBegin();
+        this.doPaint(this.getFacesWithCanvasTexture(textureKey), textureKey);
+    }
+    protected abstract doPaint<T extends Material>(faces: FaceData[], textureKey: TextureOfMaterial<T>): void;
+
+
     private checkBegin(): void {
         if(!this.cachedFaces)
             throw new PainterError("Painter needs to begin painting before calling this method.");
     }
 
+    private getFacesWithCanvasTexture<T extends Material>(textureKey: TextureOfMaterial<T>): FaceData[] {
+        return this.cachedFaces.filter((face, index, faces) => {
+            const material = face.material as T;
+            if(!material) return false;
+            const texture = material[textureKey] as CanvasTexture;
+            if(!texture) return false;
 
-    paint<T extends Material>(textureKey: TextureOfMaterial<T>): void {
-        this.checkBegin();
-        this.doPaint(this.cachedFaces, textureKey);
+            return texture.image instanceof HTMLCanvasElement;
+        });
     }
-    protected abstract doPaint<T extends Material>(faces: FaceData[], textureKey: TextureOfMaterial<T>): void;
 }
 
 class PainterError extends Error {
