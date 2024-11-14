@@ -5,7 +5,6 @@ import {
   Camera,
   CanvasTexture,
   Color,
-  Material,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
   MOUSE,
@@ -22,6 +21,7 @@ import env_studio from "./assets/hdris/studio_small_03_1k.hdr";
 import env_meadow from "./assets/hdris/meadow_2_1k.hdr";
 import env_sky from "./assets/hdris/kloofendal_48d_partly_cloudy_puresky_1k.hdr";
 import env_nightcity from "./assets/hdris/cobblestone_street_night_1k.hdr";
+import CircleSelector from "./core/painting/selectors/CircleSelector";
 
 class MyApp extends React.Component {
   private static hdris: Map<string, string> = new Map<string, string>([
@@ -112,7 +112,7 @@ class MyApp extends React.Component {
           <OrbitControls
             mouseButtons={{
               LEFT: null,
-              MIDDLE: MOUSE.PAN,
+              MIDDLE: MOUSE.DOLLY,
               RIGHT: MOUSE.ROTATE,
             }}
           />
@@ -191,7 +191,7 @@ class MyApp extends React.Component {
 
     if (!this.painter)
       this.painter = new FacesPainter(
-        new RaycastFaceSelector(this.scene, this.camera),
+        new CircleSelector(this.scene, this.camera, 40),
         null
       );
 

@@ -2,6 +2,7 @@ import { Camera, Mesh, Object3D, Vector2 } from "three";
 import FaceData from "../datastructures/FaceData";
 import Selector from "./Selector";
 import { Raycaster } from "three/src/Three";
+import CoordinateUtils from "../../utils/CoordinateUtils";
 
 export default class RaycastFaceSelector implements Selector {
   private raycaster: Raycaster;
@@ -15,7 +16,8 @@ export default class RaycastFaceSelector implements Selector {
   }
 
   selectFaces(clientPosition: Vector2): FaceData[] {
-    const normalizedPosition = this.getNormalizedPosition(clientPosition);
+    const normalizedPosition =
+      CoordinateUtils.clientToNormalized(clientPosition);
     const rc = this.raycaster;
 
     rc.setFromCamera(normalizedPosition, this.camera);
@@ -25,14 +27,8 @@ export default class RaycastFaceSelector implements Selector {
       return [];
 
     const mesh = intersections[0].object as Mesh;
-    const originalFace = intersections[0].face;
-    return [FaceData.createFromMesh(mesh, originalFace)];
-  }
 
-  private getNormalizedPosition(clientPosition: Vector2) : Vector2 {
-    return new Vector2(
-      (clientPosition.x / window.innerWidth) * 2 - 1,
-      -((clientPosition.y / window.innerHeight) * 2 - 1)
-    );
+    const originalFace = intersections[0].face;
+    return [FaceData.createFromFace(mesh, originalFace)];
   }
 }

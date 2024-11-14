@@ -1,21 +1,22 @@
 import {
   Camera,
-  Euler,
-  Line3,
+  Frustum,
+  Matrix4,
+  Mesh,
   Object3D,
-  PerspectiveCamera,
-  Quaternion,
   Vector2,
   Vector3,
 } from "three";
 import FaceData from "../datastructures/FaceData";
 import Selector from "./Selector";
 import CameraRayCalculation from "./raycalculations/CameraRayCalculation";
+import CoordinateUtils from "../../utils/CoordinateUtils";
 
-export default class CircleSelector<T extends Camera> implements Selector {
+export default class CircleSelector implements Selector {
   private root: Object3D;
-  private camera: T;
-  private rayCalculation: CameraRayCalculation<T>;
+  private camera: Camera;
+
+  private frustum: Frustum;
 
   private radius: number;
   getRadius(): number {
@@ -25,58 +26,132 @@ export default class CircleSelector<T extends Camera> implements Selector {
     this.radius = value;
   }
 
-  constructor(
-    root: Object3D,
-    camera: T,
-    rayCalculation: CameraRayCalculation<T>,
-    radius: number
-  ) {
+  constructor(root: Object3D, camera: Camera, radius: number) {
     this.root = root;
     this.camera = camera;
-    this.rayCalculation = rayCalculation;
     this.radius = radius;
+    this.frustum = new Frustum();
   }
 
   selectFaces(clientPosition: Vector2): FaceData[] {
-    throw new Error("Method not implemented.");
-  }
+    let output: FaceData[] = [];
 
-  private getNormalizedPosition(clientPosition: Vector2): Vector2 {
-    return new Vector2(
-      (clientPosition.x / window.innerWidth) * 2 - 1,
-      -((clientPosition.y / window.innerHeight) * 2 - 1)
+    this.camera.updateMatrix();
+    this.camera.updateMatrixWorld();
+    this.frustum = this.frustum.setFromProjectionMatrix(
+      new Matrix4().multiplyMatrices(
+        this.camera.projectionMatrix.clone(),
+        this.camera.matrixWorldInverse.clone()
+      )
     );
+
+    this.selectUnsortedFaces(clientPosition, this.root, output);
+    output = output.filter(
+      (face) =>
+        this.filterBackface(face) &&
+        this.filterFaceOutsideCircle(face, clientPosition)
+    );
+
+    return output;
   }
 
-  // solution: https://math.stackexchange.com/questions/1993953/closest-points-between-two-lines
-  private faceIsInCircle(face: FaceData, normalizedPosition: Vector2): boolean {
-    let inCircle = true;
+  private selectUnsortedFaces(
+    clientPosition: Vector2,
+    object: Object3D,
+    output: FaceData[]
+  ) {
+    object.children.forEach((child) => {
+      this.selectUnsortedFaces(clientPosition, child, output);
+    });
 
-    const Lc = this.calculateCameraRay(normalizedPosition);
-    const Pc = Lc.start;
-    const Vc = Lc.end.sub(Lc.start).normalize();
+    const mesh = object as Mesh;
+    if (!mesh.isMesh) return;
+    if (!this.frustum.intersectsObject(mesh)) return;
 
-    let faces = [face.a, face.b, face.c];
-    for (let i = 0; i < 3; i++) {
-      if (!inCircle) break;
+    output.push(...FaceData.createArrayFromMesh(mesh));
+  }
 
-      const Lf = new Line3(faces[i].position, faces[(i + 1) % 3].position);
-      const Pf = Lf.start;
-      const Vf = Lf.end.sub(Lf.start).normalize();
+  private filterBackface(face: FaceData): boolean {
+    let cameraWorldPos = new Vector3();
+    this.camera.getWorldPosition(cameraWorldPos);
 
-      const Vx = Vf.cross(Vc);
+    const cameraNormal = face
+      .getPosition()
+      .clone()
+      .sub(cameraWorldPos)
+      .normalize();
+    return face.getNormal().clone().dot(cameraNormal) < 0;
+  }
 
-      // linear equation: Pc + tc*Vc + tx*Vx = Pf + tf*Vf
-      let tc: number, tf: number, tx: number;
+  private filterFaceOutsideCircle(
+    face: FaceData,
+    clientPosition: Vector2
+  ): boolean {
+    const vertexNdcCoords: Vector3[] = [
+      face.a.position.clone().project(this.camera),
+      face.b.position.clone().project(this.camera),
+      face.c.position.clone().project(this.camera),
+    ];
+
+    const relativeCoords = vertexNdcCoords.map((ndcCoords) => {
+      return CoordinateUtils.ndcToClient(ndcCoords).sub(clientPosition);
+    });
+
+    // https://www.phatcode.net/articles.php?id=459
+    let result = false;
+    result ||= this.vertexWithinCircle(relativeCoords);
+    result ||= this.circleCenterWithinTriangle(relativeCoords);
+    result ||= this.circleIntersectsEdge(relativeCoords);
+
+    return result;
+  }
+  private vertexWithinCircle(relativeCoords: Vector2[]): boolean {
+    for (const key in relativeCoords) {
+      const coords = relativeCoords[key] as Vector2;
+
+      if (coords.length() <= this.radius) return true;
+    }
+    return false;
+  }
+  private circleCenterWithinTriangle(relativeCoords: Vector2[]): boolean {
+    const length = relativeCoords.length;
+    for (let i = 0; i < length; i++) {
+      const P1 = relativeCoords[i];
+      const P2 = relativeCoords[(i + 1) % length];
+
+      // assumption: all faces' vertices are in clockwise order
+      const normal = new Vector2(P2.y - P1.y, P1.x - P2.x);
+      const sign = normal.x * -P1.x + normal.y * -P1.y;
+      if (sign < 0) return false;
     }
 
-    return inCircle;
+    return true;
   }
+  private circleIntersectsEdge(relativeCoords: Vector2[]): boolean {
+    const length = relativeCoords.length;
+    for (let i = 0; i < length; i++) {
+      const P1 = relativeCoords[i];
+      const P2 = relativeCoords[(i + 1) % length];
 
-  private calculateCameraRay(normalizedPosition: Vector2): Line3 {
-    return this.rayCalculation.calculateCameraRay(
-      this.camera,
-      normalizedPosition
-    );
+      const e1 = P2.clone().sub(P1);
+      const c1 = P1;
+
+      const le1l = e1.length();
+      const lc1l = c1.length();
+
+      const p = lc1l;
+      const dot = c1.dot(e1);
+      const k = dot / le1l;
+      const d = Math.sqrt(p * p - k * k);
+
+      const intersectsLine = d <= this.radius;
+      let pointIsInSegment = true;
+      pointIsInSegment &&= dot <= 0;
+      pointIsInSegment &&= k >= le1l;
+
+      if (intersectsLine && pointIsInSegment) return true;
+    }
+
+    return false;
   }
 }
