@@ -46,11 +46,7 @@ export default class CircleSelector implements Selector {
     );
 
     this.selectUnsortedFaces(clientPosition, this.root, output);
-    output = output.filter(
-      (face) =>
-        this.filterBackface(face) &&
-        this.filterFaceOutsideCircle(face, clientPosition)
-    );
+    output = output.filter((face) => this.filterFace(face, clientPosition));
 
     return output;
   }
@@ -71,30 +67,46 @@ export default class CircleSelector implements Selector {
     output.push(...FaceData.createArrayFromMesh(mesh));
   }
 
-  private filterBackface(face: FaceData): boolean {
-    let cameraWorldPos = new Vector3();
-    this.camera.getWorldPosition(cameraWorldPos);
-
-    const cameraNormal = face
-      .getPosition()
-      .clone()
-      .sub(cameraWorldPos)
-      .normalize();
-    return face.getNormal().clone().dot(cameraNormal) < 0;
-  }
-
-  private filterFaceOutsideCircle(
-    face: FaceData,
-    clientPosition: Vector2
-  ): boolean {
+  private filterFace(face: FaceData, clientPosition: Vector2): boolean {
     const vertexNdcCoords: Vector3[] = [
       face.a.position.clone().project(this.camera),
       face.b.position.clone().project(this.camera),
       face.c.position.clone().project(this.camera),
     ];
 
+    return (
+      this.filterBackface(face) &&
+      this.filterDepths(vertexNdcCoords) && // experimental fix
+      this.filterFaceOutsideCircle(clientPosition, vertexNdcCoords)
+    );
+  }
+
+  private filterBackface(face: FaceData): boolean {
+    let cameraWorldPos = new Vector3();
+    this.camera.getWorldPosition(cameraWorldPos);
+
+    const cameraNormal = this.camera.getWorldDirection(new Vector3());
+    return face.getNormal().clone().dot(cameraNormal) < 0;
+  }
+
+  private filterDepths(vertexNdcCoords: Vector3[]): boolean {
+    for (let i = 0; i < vertexNdcCoords.length; i++) {
+      const vertex = vertexNdcCoords[i];
+      if (vertex.z <= 0 || vertex.z > 3) return false;
+    }
+    return true;
+  }
+
+  private filterFaceOutsideCircle(
+    clientPosition: Vector2,
+    vertexNdcCoords: Vector3[]
+  ): boolean {
+    const depth: number[] = [];
     const relativeCoords = vertexNdcCoords.map((ndcCoords) => {
-      return CoordinateUtils.ndcToClient(ndcCoords).sub(clientPosition);
+      const ndc = CoordinateUtils.ndcToClientWithDepth(ndcCoords);
+      const relativeCoord = new Vector2(ndc.x, ndc.y).sub(clientPosition);
+      depth.push(ndc.z);
+      return relativeCoord;
     });
 
     // https://www.phatcode.net/articles.php?id=459
@@ -106,8 +118,8 @@ export default class CircleSelector implements Selector {
     return result;
   }
   private vertexWithinCircle(relativeCoords: Vector2[]): boolean {
-    for (const key in relativeCoords) {
-      const coords = relativeCoords[key] as Vector2;
+    for (let i = 0; i < relativeCoords.length; i++) {
+      const coords = relativeCoords[i] as Vector2;
 
       if (coords.length() <= this.radius) return true;
     }
@@ -134,7 +146,7 @@ export default class CircleSelector implements Selector {
       const P2 = relativeCoords[(i + 1) % length];
 
       const e1 = P2.clone().sub(P1);
-      const c1 = P1;
+      const c1 = P1.clone().multiplyScalar(-1);
 
       const le1l = e1.length();
       const lc1l = c1.length();
@@ -146,8 +158,8 @@ export default class CircleSelector implements Selector {
 
       const intersectsLine = d <= this.radius;
       let pointIsInSegment = true;
-      pointIsInSegment &&= dot <= 0;
-      pointIsInSegment &&= k >= le1l;
+      pointIsInSegment &&= dot > 0;
+      pointIsInSegment &&= k < le1l;
 
       if (intersectsLine && pointIsInSegment) return true;
     }

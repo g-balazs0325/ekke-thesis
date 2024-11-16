@@ -8,20 +8,29 @@ const clientToNormalized = function (clientPosition: Vector2): Vector2 {
 };
 const normalizedToClient = function (normalizedPosition: Vector2): Vector2 {
   return new Vector2(
-    ((normalizedPosition.x + 1) / 2) * window.innerWidth,
-    (-(normalizedPosition.y + 1) / 2) * window.innerHeight
+    ((1 + normalizedPosition.x) / 2) * window.innerWidth,
+    ((1 - normalizedPosition.y) / 2) * window.innerHeight
+  );
+};
+const ndcToClientWithDepth = function (ndcPosition: Vector3): Vector3 {
+  return new Vector3(
+    ((1 + ndcPosition.x) / 2) * window.innerWidth,
+    ((1 - ndcPosition.y) / 2) * window.innerHeight,
+    ndcPosition.z
   );
 };
 const ndcToClient = function (ndcPosition: Vector3): Vector2 {
+  const sign = ndcPosition.z >= 0 ? 1 : -1;
   return new Vector2(
-    ((ndcPosition.x + 1) / 2) * window.innerWidth,
-    ((-ndcPosition.y + 1) / 2) * window.innerHeight
+    ((1 + ndcPosition.x) / 2) * window.innerWidth,
+    ((1 - ndcPosition.y) / 2) * window.innerHeight
   );
 };
 
 const CoordinateUtils = {
   clientToNormalized,
   normalizedToClient,
+  ndcToClientWithDepth,
   ndcToClient,
 };
 export default CoordinateUtils;
