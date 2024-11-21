@@ -45,7 +45,7 @@ class MyApp extends React.Component {
   private gui: GUI;
 
   state = {
-    wf: false,
+    wireframe: false,
     hdri: env_studio,
     useHdriAsBackground: true,
   };
@@ -64,10 +64,10 @@ class MyApp extends React.Component {
   private initializeGUI(): void {
     this.gui = new GUI();
 
-    const folderHdri = this.gui.addFolder("HDRI options");
+    const folderHdri = this.gui.addFolder("Render options");
     folderHdri
       .add<any, string>(MyApp, "currentHdriName", [...MyApp.hdris.keys()])
-      .name("Theme")
+      .name("HDRI theme")
       .onChange((key) => {
         const hdri: string = MyApp.hdris.get(key);
         this.setState({ hdri: hdri });
@@ -76,6 +76,10 @@ class MyApp extends React.Component {
       .add(this.state, "useHdriAsBackground")
       .name("Use HDRI as background")
       .onChange((value) => this.setState({ hdriBackground: value }));
+    folderHdri
+      .add(this.state, "wireframe")
+      .name("Wireframe")
+      .onChange((value) => this.setState({ wireframe: value }));
 
     const folderBrush = this.gui.addFolder("Brush options");
     folderBrush.addColor(this, "albedoColor").name("Albedo Color");
@@ -96,8 +100,6 @@ class MyApp extends React.Component {
       <React.StrictMode>
         <Canvas
           tabIndex={0}
-          onKeyDown={() => this.updateWf(true)}
-          onKeyUp={() => this.updateWf(false)}
           onCreated={this.setSceneAndCamera.bind(this)}
           onClick={this.onClick.bind(this)}
         >
@@ -121,7 +123,7 @@ class MyApp extends React.Component {
           <mesh>
             <torusKnotGeometry />
             <meshPhysicalMaterial
-              wireframe={this.state.wf}
+              wireframe={this.state.wireframe}
               roughness={1}
               metalness={1}
             >
@@ -180,10 +182,6 @@ class MyApp extends React.Component {
     }
     context.closePath();
     context.stroke();
-  }
-
-  private updateWf(value: boolean): void {
-    this.setState({ wf: value });
   }
 
   private onClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
