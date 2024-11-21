@@ -1,3 +1,8 @@
+import env_studio from "./assets/hdris/studio_small_03_1k.hdr";
+import env_meadow from "./assets/hdris/meadow_2_1k.hdr";
+import env_sky from "./assets/hdris/kloofendal_48d_partly_cloudy_puresky_1k.hdr";
+import env_nightcity from "./assets/hdris/cobblestone_street_night_1k.hdr";
+
 import { Canvas, RootState } from "@react-three/fiber";
 import * as React from "react";
 import { createRoot } from "react-dom/client";
@@ -16,11 +21,6 @@ import { Environment, OrbitControls } from "@react-three/drei";
 import { GUI } from "three/examples/jsm/libs/lil-gui.module.min";
 import RaycastFaceSelector from "./core/painting/selectors/RaycastFaceSelector";
 import FacesPainter from "./core/painting/FacesPainter";
-
-import env_studio from "./assets/hdris/studio_small_03_1k.hdr";
-import env_meadow from "./assets/hdris/meadow_2_1k.hdr";
-import env_sky from "./assets/hdris/kloofendal_48d_partly_cloudy_puresky_1k.hdr";
-import env_nightcity from "./assets/hdris/cobblestone_street_night_1k.hdr";
 import CircleSelector from "./core/painting/selectors/CircleSelector";
 import Selector from "./core/painting/selectors/Selector";
 
