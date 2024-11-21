@@ -22,6 +22,7 @@ import env_meadow from "./assets/hdris/meadow_2_1k.hdr";
 import env_sky from "./assets/hdris/kloofendal_48d_partly_cloudy_puresky_1k.hdr";
 import env_nightcity from "./assets/hdris/cobblestone_street_night_1k.hdr";
 import CircleSelector from "./core/painting/selectors/CircleSelector";
+import Selector from "./core/painting/selectors/Selector";
 
 class MyApp extends React.Component {
   private static hdris: Map<string, string> = new Map<string, string>([
@@ -34,7 +35,10 @@ class MyApp extends React.Component {
 
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
   private textureRef: React.MutableRefObject<CanvasTexture>;
+
   private painter: FacesPainter;
+  private selectors: Map<string, Selector>;
+  private currentSelectorName: string = "";
 
   private scene: Scene;
   private camera: Camera;
@@ -57,40 +61,6 @@ class MyApp extends React.Component {
     this.state.hdri = MyApp.hdris.get(MyApp.currentHdriName);
   }
 
-  componentDidMount(): void {
-    this.initializeGUI();
-  }
-
-  private initializeGUI(): void {
-    this.gui = new GUI();
-
-    const folderHdri = this.gui.addFolder("Render options");
-    folderHdri
-      .add<any, string>(MyApp, "currentHdriName", [...MyApp.hdris.keys()])
-      .name("HDRI theme")
-      .onChange((key) => {
-        const hdri: string = MyApp.hdris.get(key);
-        this.setState({ hdri: hdri });
-      });
-    folderHdri
-      .add(this.state, "useHdriAsBackground")
-      .name("Use HDRI as background")
-      .onChange((value) => this.setState({ hdriBackground: value }));
-    folderHdri
-      .add(this.state, "wireframe")
-      .name("Wireframe")
-      .onChange((value) => this.setState({ wireframe: value }));
-
-    const folderBrush = this.gui.addFolder("Brush options");
-    folderBrush.addColor(this, "albedoColor").name("Albedo Color");
-    folderBrush
-      .add(this as MyApp, "roughnessIntensity", 0, 255, 1)
-      .name("Roughness");
-    folderBrush
-      .add(this as MyApp, "metalnessIntensity", 0, 255, 1)
-      .name("Metalness");
-  }
-
   componentWillUnmount(): void {
     this.gui.destroy();
   }
@@ -100,7 +70,7 @@ class MyApp extends React.Component {
       <React.StrictMode>
         <Canvas
           tabIndex={0}
-          onCreated={this.setSceneAndCamera.bind(this)}
+          onCreated={this.onSceneCreated.bind(this)}
           onClick={this.onClick.bind(this)}
         >
           <React.Suspense fallback={null}>
@@ -152,9 +122,61 @@ class MyApp extends React.Component {
     );
   }
 
-  private setSceneAndCamera(state: RootState): void {
+  private onSceneCreated(state: RootState): void {
     this.scene = state.scene;
     this.camera = state.camera;
+
+    this.initializePaintingObjects();
+    this.initializeGUI();
+  }
+
+  private initializePaintingObjects(): void {
+    this.selectors = new Map<string, Selector>([
+      ["Raycast", new RaycastFaceSelector(this.scene, this.camera)],
+      ["Circle", new CircleSelector(this.scene, this.camera, 40)],
+    ]);
+
+    this.currentSelectorName = "Raycast";
+    this.painter = new FacesPainter(
+      this.selectors.get(this.currentSelectorName),
+      this.albedoColor
+    );
+  }
+
+  private initializeGUI(): void {
+    this.gui = new GUI();
+
+    const folderHdri = this.gui.addFolder("Render options");
+    folderHdri
+      .add<any, string>(MyApp, "currentHdriName", [...MyApp.hdris.keys()])
+      .name("HDRI theme")
+      .onChange((key) => {
+        const hdri: string = MyApp.hdris.get(key);
+        this.setState({ hdri: hdri });
+      });
+    folderHdri
+      .add(this.state, "useHdriAsBackground")
+      .name("Use HDRI as background")
+      .onChange((value) => this.setState({ hdriBackground: value }));
+    folderHdri
+      .add(this.state, "wireframe")
+      .name("Wireframe")
+      .onChange((value) => this.setState({ wireframe: value }));
+
+    const folderBrush = this.gui.addFolder("Brush options");
+    folderBrush
+      .add<any, string>(this as MyApp, "currentSelectorName", [
+        ...this.selectors.keys(),
+      ])
+      .name("Selector")
+      .onChange((value) => this.painter.setSelector(this.selectors.get(value)));
+    folderBrush.addColor(this, "albedoColor").name("Albedo Color");
+    folderBrush
+      .add(this as MyApp, "roughnessIntensity", 0, 255, 1)
+      .name("Roughness");
+    folderBrush
+      .add(this as MyApp, "metalnessIntensity", 0, 255, 1)
+      .name("Metalness");
   }
 
   private initializeCanvasTexture(
