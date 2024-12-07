@@ -23,7 +23,7 @@ export default class RaycastFaceSelector implements Selector {
     rc.setFromCamera(normalizedPosition, this.camera);
     const intersections = rc.intersectObject(this.root, true);
 
-    if (intersections.length == 0 || intersections[0].object! instanceof Mesh)
+    if (intersections.length == 0 || intersections[0]?.object instanceof Mesh)
       return [];
 
     const mesh = intersections[0].object as Mesh;
