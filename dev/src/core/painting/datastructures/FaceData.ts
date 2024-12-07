@@ -59,7 +59,7 @@ export default class FaceData {
       ? materials[originalFace.materialIndex]
       : materials;
 
-    let localToWorldMatrix = new Matrix3();
+    const localToWorldMatrix = new Matrix3();
     localToWorldMatrix.getNormalMatrix(mesh.matrixWorld);
     const vertexIndices = [originalFace.a, originalFace.b, originalFace.c];
     const vertices = this.createVertexDataForVertices(
@@ -77,10 +77,10 @@ export default class FaceData {
   }
 
   static createArrayFromMesh(mesh: Mesh): FaceData[] {
-    let faces: FaceData[] = [];
+    const faces: FaceData[] = [];
     const geometry = mesh.geometry;
 
-    let localToWorldMatrix = new Matrix3();
+    const localToWorldMatrix = new Matrix3();
     localToWorldMatrix.getNormalMatrix(mesh.matrixWorld);
     if (!Array.isArray(mesh.material)) {
       const material = mesh.material as Material;
@@ -113,10 +113,10 @@ export default class FaceData {
     geometry: BufferGeometry<NormalBufferAttributes>,
     material: Material,
     localToWorldMatrix: Matrix3,
-    start: number = 0,
-    end: number = -1
+    start = 0,
+    end = -1
   ): FaceData[] {
-    let faces: FaceData[] = [];
+    const faces: FaceData[] = [];
     const indices = geometry.index.array;
 
     if (end == -1) end = indices.length;
@@ -155,7 +155,7 @@ export default class FaceData {
     if (!(positions && uvs && normals))
       throw new Error("Given 'mesh' is invalid"); //TODO: create new error type
 
-    let vertices: VertexData[] = [];
+    const vertices: VertexData[] = [];
     vertexIndices.forEach((index) => {
       const localPosition = new Vector3(
         positions.getX(index),

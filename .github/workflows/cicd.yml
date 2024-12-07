@@ -6,7 +6,7 @@ on:
       - "dev/**"
 
 jobs:
-  prepare:
+  error-check:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,11 +20,6 @@ jobs:
       - name: Typescript telepítése
         run: npm install typescript -g
 
-  error-check:
-    runs-on: ubuntu-latest
-    needs: prepare
-
-    steps:
       - name: Typescript hibaellenőrzés
         working-directory: dev
         run: tsc --noEmit
