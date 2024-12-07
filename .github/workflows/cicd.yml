@@ -26,11 +26,9 @@ jobs:
 
     steps:
       - name: Typescript hibaellenőrzés
-        run: |
-          cd ./dev
-          tsc --noEmit
+        working-directory: ./dev
+        run: tsc --noEmit
 
       - name: ESLint hibaellenőrzés
-        run: |
-          cd ./dev
-          npx eslint .
+        working-directory: ./dev
+        run: npx eslint .
