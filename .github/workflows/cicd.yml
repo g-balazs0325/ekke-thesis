@@ -1,7 +1,12 @@
-name: CI/CD
+name: Linter
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "./dev/**"
 
 jobs:
   prepare:
