@@ -1,12 +1,9 @@
 name: Linter
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - "**"
     paths:
-      - "./dev/**"
+      - "dev/**"
 
 jobs:
   prepare:
