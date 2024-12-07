@@ -31,21 +31,21 @@ class MyApp extends React.Component {
     ["Sky", env_sky],
     ["City (night)", env_nightcity],
   ]);
-  private static currentHdriName: string = "Studio";
+  private static currentHdriName = "Studio";
 
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
   private textureRef: React.MutableRefObject<CanvasTexture>;
 
   private painter: FacesPainter;
   private selectors: Map<string, Selector>;
-  private currentSelectorName: string = "";
+  private currentSelectorName = "";
 
   private scene: Scene;
   private camera: Camera;
 
   public albedoColor: Color = new Color("blue");
-  public roughnessIntensity: number = 255;
-  public metalnessIntensity: number = 0;
+  public roughnessIntensity = 255;
+  public metalnessIntensity = 0;
   private gui: GUI;
 
   state = {
