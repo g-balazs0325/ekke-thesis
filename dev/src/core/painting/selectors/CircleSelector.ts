@@ -82,7 +82,7 @@ export default class CircleSelector implements Selector {
   }
 
   private filterBackface(face: FaceData): boolean {
-    let cameraWorldPos = new Vector3();
+    const cameraWorldPos = new Vector3();
     this.camera.getWorldPosition(cameraWorldPos);
 
     const cameraNormal = this.camera.getWorldDirection(new Vector3());
