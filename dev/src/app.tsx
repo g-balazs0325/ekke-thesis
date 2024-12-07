@@ -231,4 +231,4 @@ class MyApp extends React.Component {
 }
 
 const root = createRoot(document.getElementById("root"));
-root.render(<MyApp />); //
+root.render(<MyApp />);
