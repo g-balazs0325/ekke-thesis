@@ -20,6 +20,9 @@ jobs:
       - name: Typescript telepítése
         run: npm install typescript -g
 
+      - name: Projekt dependency-k telepítése
+        run: npm install
+
       - name: Typescript hibaellenőrzés
         working-directory: dev
         run: tsc --noEmit
