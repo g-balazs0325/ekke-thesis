@@ -1,4 +1,4 @@
-import { CanvasTexture, Color, Material, Texture, Vector2 } from "three";
+import { CanvasTexture, Color, Material } from "three";
 import Painter, { TextureOfMaterial } from "./Painter";
 import Selector from "./selectors/Selector";
 import FaceData from "./datastructures/FaceData";

@@ -9,7 +9,6 @@ import {
 } from "three";
 import FaceData from "../datastructures/FaceData";
 import Selector from "./Selector";
-import CameraRayCalculation from "./raycalculations/CameraRayCalculation";
 import CoordinateUtils from "../../utils/CoordinateUtils";
 
 export default class CircleSelector implements Selector {
@@ -82,7 +81,7 @@ export default class CircleSelector implements Selector {
   }
 
   private filterBackface(face: FaceData): boolean {
-    let cameraWorldPos = new Vector3();
+    const cameraWorldPos = new Vector3();
     this.camera.getWorldPosition(cameraWorldPos);
 
     const cameraNormal = this.camera.getWorldDirection(new Vector3());

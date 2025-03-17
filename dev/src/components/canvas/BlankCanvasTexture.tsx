@@ -68,5 +68,3 @@ export class BlankCanvasTexture extends React.Component<BlankCanvasTextureProps>
     else ref.current = value;
   }
 }
-
-export default BlankCanvasTexture;

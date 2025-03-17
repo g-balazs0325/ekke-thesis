@@ -70,7 +70,7 @@ export default abstract class Painter {
   private getFacesWithCanvasTexture<T extends Material>(
     textureKey: TextureOfMaterial<T>
   ): FaceData[] {
-    return this.cachedFaces.filter((face, index, faces) => {
+    return this.cachedFaces.filter((face) => {
       const material = face.material as T;
       if (!material) return false;
       const texture = material[textureKey] as CanvasTexture;

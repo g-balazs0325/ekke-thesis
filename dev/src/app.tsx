@@ -16,7 +16,7 @@ import {
   Scene,
   Vector2,
 } from "three";
-import BlankCanvasTexture from "./components/canvas/BlankCanvasTexture";
+import { BlankCanvasTexture } from "./components/canvas/BlankCanvasTexture";
 import { Environment, OrbitControls } from "@react-three/drei";
 import { GUI } from "three/examples/jsm/libs/lil-gui.module.min";
 import RaycastFaceSelector from "./core/painting/selectors/RaycastFaceSelector";
@@ -24,28 +24,39 @@ import FacesPainter from "./core/painting/FacesPainter";
 import CircleSelector from "./core/painting/selectors/CircleSelector";
 import Selector from "./core/painting/selectors/Selector";
 
+enum HdriEnum {
+  Studio = "Studio",
+  Meadows = "Meadows",
+  Sky = "Sky",
+  City = "City (night)",
+}
+enum SelectorEnum {
+  Raycast = "Raycast",
+  Circle = "Circle",
+}
+
 class MyApp extends React.Component {
-  private static hdris: Map<string, string> = new Map<string, string>([
-    ["Studio", env_studio],
-    ["Meadows", env_meadow],
-    ["Sky", env_sky],
-    ["City (night)", env_nightcity],
+  private hdris: Map<HdriEnum, string> = new Map<HdriEnum, string>([
+    [HdriEnum.Studio, env_studio],
+    [HdriEnum.Meadows, env_meadow],
+    [HdriEnum.Sky, env_sky],
+    [HdriEnum.City, env_nightcity],
   ]);
-  private static currentHdriName: string = "Studio";
+  public currentHdriName = HdriEnum.Studio;
 
   private canvasRef: React.MutableRefObject<HTMLCanvasElement>;
   private textureRef: React.MutableRefObject<CanvasTexture>;
 
   private painter: FacesPainter;
-  private selectors: Map<string, Selector>;
-  private currentSelectorName: string = "";
+  private selectors: Map<SelectorEnum, Selector>;
+  public currentSelectorName: SelectorEnum;
 
   private scene: Scene;
   private camera: Camera;
 
   public albedoColor: Color = new Color("blue");
-  public roughnessIntensity: number = 255;
-  public metalnessIntensity: number = 0;
+  public roughnessIntensity = 255;
+  public metalnessIntensity = 0;
   private gui: GUI;
 
   state = {
@@ -54,11 +65,11 @@ class MyApp extends React.Component {
     useHdriAsBackground: true,
   };
 
-  constructor(props: any) {
+  constructor(props: unknown) {
     super(props);
     this.canvasRef = React.createRef();
     this.textureRef = React.createRef();
-    this.state.hdri = MyApp.hdris.get(MyApp.currentHdriName);
+    this.state.hdri = this.hdris.get(this.currentHdriName);
   }
 
   componentWillUnmount(): void {
@@ -131,12 +142,12 @@ class MyApp extends React.Component {
   }
 
   private initializePaintingObjects(): void {
-    this.selectors = new Map<string, Selector>([
-      ["Raycast", new RaycastFaceSelector(this.scene, this.camera)],
-      ["Circle", new CircleSelector(this.scene, this.camera, 40)],
+    this.selectors = new Map<SelectorEnum, Selector>([
+      [SelectorEnum.Raycast, new RaycastFaceSelector(this.scene, this.camera)],
+      [SelectorEnum.Circle, new CircleSelector(this.scene, this.camera, 40)],
     ]);
 
-    this.currentSelectorName = "Raycast";
+    this.currentSelectorName = SelectorEnum.Raycast;
     this.painter = new FacesPainter(
       this.selectors.get(this.currentSelectorName),
       this.albedoColor
@@ -148,10 +159,10 @@ class MyApp extends React.Component {
 
     const folderHdri = this.gui.addFolder("Render options");
     folderHdri
-      .add<any, string>(MyApp, "currentHdriName", [...MyApp.hdris.keys()])
+      .add(this, "currentHdriName", [...this.hdris.keys()])
       .name("HDRI theme")
       .onChange((key) => {
-        const hdri: string = MyApp.hdris.get(key);
+        const hdri: string = this.hdris.get(key);
         this.setState({ hdri: hdri });
       });
     folderHdri
@@ -165,9 +176,7 @@ class MyApp extends React.Component {
 
     const folderBrush = this.gui.addFolder("Brush options");
     folderBrush
-      .add<any, string>(this as MyApp, "currentSelectorName", [
-        ...this.selectors.keys(),
-      ])
+      .add(this, "currentSelectorName", [...this.selectors.keys()])
       .name("Selector")
       .onChange((value) => this.painter.setSelector(this.selectors.get(value)));
     folderBrush.addColor(this, "albedoColor").name("Albedo Color");

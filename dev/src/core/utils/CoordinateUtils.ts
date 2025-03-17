@@ -20,7 +20,6 @@ const ndcToClientWithDepth = function (ndcPosition: Vector3): Vector3 {
   );
 };
 const ndcToClient = function (ndcPosition: Vector3): Vector2 {
-  const sign = ndcPosition.z >= 0 ? 1 : -1;
   return new Vector2(
     ((1 + ndcPosition.x) / 2) * window.innerWidth,
     ((1 - ndcPosition.y) / 2) * window.innerHeight
