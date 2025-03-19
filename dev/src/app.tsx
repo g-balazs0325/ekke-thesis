@@ -103,7 +103,15 @@ class MyApp extends React.Component {
           <ambientLight intensity={0.5} />
 
           <mesh>
-            <ParametricGeometry />
+            <ParametricGeometry
+              x={(u, v) => Math.cos(u) * Math.sin(v)}
+              y={(u, v) => Math.sin(u) * Math.sin(v)}
+              z={(u, v) => Math.cos(v)}
+              uRange={[0, 2 * Math.PI]}
+              uSteps={8}
+              vRange={[0, Math.PI]}
+              vSteps={8}
+            />
             <meshPhysicalMaterial
               wireframe={this.state.wireframe}
               roughness={1}
