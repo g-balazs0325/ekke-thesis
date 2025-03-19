@@ -13,14 +13,17 @@ export interface ParametricGeometryProps {
 }
 
 export function ParametricGeometry(props: ParametricGeometryProps) {
-  const [vertices] = useMemo(() => {
+  const [vertices, uvs] = useMemo(() => {
     const vertsArray: number[] = [];
+    const uvsArray: number[] = [];
 
     const [x, y, z] = [props.x, props.y, props.z];
     const [uMin, uMax] = props.uRange;
     const [vMin, vMax] = props.vRange;
-    const uStep = (uMax - uMin) / props.uSteps;
-    const vStep = (vMax - vMin) / props.vSteps;
+    const uDiff = uMax - uMin;
+    const vDiff = vMax - vMin;
+    const uStep = uDiff / props.uSteps;
+    const vStep = vDiff / props.vSteps;
 
     let u = uMin;
     let v = vMin;
@@ -40,12 +43,22 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
         vertsArray.push(x01, y01, z01);
         vertsArray.push(x00, y00, z00);
 
+        uvsArray.push(i / props.uSteps, j / props.vSteps);
+        uvsArray.push((i + 1) / props.uSteps, j / props.vSteps);
+        uvsArray.push((i + 1) / props.uSteps, (j + 1) / props.vSteps);
+
+        uvsArray.push((i + 1) / props.uSteps, (j + 1) / props.vSteps);
+        uvsArray.push(i / props.uSteps, (j + 1) / props.vSteps);
+        uvsArray.push(i / props.uSteps, j / props.vSteps);
+
         v += vStep;
       }
       u += uStep;
     }
 
-    return [new Float32Array(vertsArray)];
+    const vertices = new Float32Array(vertsArray);
+    const uvs = new Float32Array(uvsArray);
+    return [vertices, uvs];
   }, [props]);
 
   return (
@@ -55,6 +68,12 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
         array={vertices}
         itemSize={3}
         count={vertices.length / 3}
+      />
+      <bufferAttribute
+        attach={"attributes-uv"}
+        array={uvs}
+        itemSize={2}
+        count={uvs.length / 2}
       />
     </bufferGeometry>
   );
