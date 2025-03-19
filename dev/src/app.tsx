@@ -23,6 +23,7 @@ import RaycastFaceSelector from "./core/painting/selectors/RaycastFaceSelector";
 import FacesPainter from "./core/painting/FacesPainter";
 import CircleSelector from "./core/painting/selectors/CircleSelector";
 import Selector from "./core/painting/selectors/Selector";
+import ParametricGeometry from "./components/geometries/ParametricGeometry";
 
 enum HdriEnum {
   Studio = "Studio",
@@ -102,7 +103,7 @@ class MyApp extends React.Component {
           <ambientLight intensity={0.5} />
 
           <mesh>
-            <torusKnotGeometry />
+            <ParametricGeometry />
             <meshPhysicalMaterial
               wireframe={this.state.wireframe}
               roughness={1}
