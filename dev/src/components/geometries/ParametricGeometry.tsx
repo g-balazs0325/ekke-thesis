@@ -35,21 +35,21 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
         const [x10, y10, z10] = calcVert(u + uStep, v, x, y, z);
         const [x11, y11, z11] = calcVert(u + uStep, v + vStep, x, y, z);
 
-        vertsArray.push(x00, y00, z00);
+        vertsArray.push(x11, y11, z11);
         vertsArray.push(x10, y10, z10);
-        vertsArray.push(x11, y11, z11);
-
-        vertsArray.push(x11, y11, z11);
-        vertsArray.push(x01, y01, z01);
         vertsArray.push(x00, y00, z00);
 
-        uvsArray.push(i / props.uSteps, j / props.vSteps);
-        uvsArray.push((i + 1) / props.uSteps, j / props.vSteps);
-        uvsArray.push((i + 1) / props.uSteps, (j + 1) / props.vSteps);
+        vertsArray.push(x00, y00, z00);
+        vertsArray.push(x01, y01, z01);
+        vertsArray.push(x11, y11, z11);
 
         uvsArray.push((i + 1) / props.uSteps, (j + 1) / props.vSteps);
-        uvsArray.push(i / props.uSteps, (j + 1) / props.vSteps);
+        uvsArray.push((i + 1) / props.uSteps, j / props.vSteps);
         uvsArray.push(i / props.uSteps, j / props.vSteps);
+
+        uvsArray.push(i / props.uSteps, j / props.vSteps);
+        uvsArray.push(i / props.uSteps, (j + 1) / props.vSteps);
+        uvsArray.push((i + 1) / props.uSteps, (j + 1) / props.vSteps);
 
         v += vStep;
       }
