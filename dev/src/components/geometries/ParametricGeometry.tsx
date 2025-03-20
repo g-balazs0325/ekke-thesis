@@ -1,4 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
+import { BufferGeometry } from "three";
+
+type BufferGeometryRef = React.Ref<BufferGeometry>;
 
 export type ParametricFunction = (u: number, v: number) => number;
 
@@ -13,9 +16,11 @@ export interface ParametricGeometryProps {
 }
 
 export function ParametricGeometry(props: ParametricGeometryProps) {
-  const [vertices, uvs] = useMemo(() => {
+  const geometryRef: BufferGeometryRef = useRef(null);
+  const [vertices, uvs, indices] = useMemo(() => {
     const vertsArray: number[] = [];
     const uvsArray: number[] = [];
+    const indicesArray: number[] = [];
 
     const [x, y, z] = [props.x, props.y, props.z];
     const [uMin, uMax] = props.uRange;
@@ -51,6 +56,14 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
         uvsArray.push(i / props.uSteps, (j + 1) / props.vSteps);
         uvsArray.push((i + 1) / props.uSteps, (j + 1) / props.vSteps);
 
+        indicesArray.push(indicesArray.length);
+        indicesArray.push(indicesArray.length);
+        indicesArray.push(indicesArray.length);
+
+        indicesArray.push(indicesArray.length);
+        indicesArray.push(indicesArray.length);
+        indicesArray.push(indicesArray.length);
+
         v += vStep;
       }
       u += uStep;
@@ -58,11 +71,19 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
 
     const vertices = new Float32Array(vertsArray);
     const uvs = new Float32Array(uvsArray);
-    return [vertices, uvs];
-  }, [props]);
+    const indices = new Uint32Array(indicesArray);
+    return [vertices, uvs, indices];
+  }, [props, geometryRef]);
+  useEffect(() => {
+    const ref = geometryRef.current;
+    if (!ref) return;
+
+    ref.computeVertexNormals();
+    console.log(ref);
+  }, [vertices, uvs]);
 
   return (
-    <bufferGeometry>
+    <bufferGeometry ref={geometryRef}>
       <bufferAttribute
         attach={"attributes-position"}
         array={vertices}
@@ -74,6 +95,12 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
         array={uvs}
         itemSize={2}
         count={uvs.length / 2}
+      />
+      <bufferAttribute
+        attach={"index"}
+        array={indices}
+        itemSize={1}
+        count={indices.length}
       />
     </bufferGeometry>
   );
