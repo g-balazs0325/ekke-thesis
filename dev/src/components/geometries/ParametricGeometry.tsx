@@ -32,37 +32,22 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
 
     let u = uMin;
     let v = vMin;
-    for (let i = 0; i < props.uSteps; i++) {
+    for (let i = 0; i <= props.uSteps; i++) {
       v = vMin;
-      for (let j = 0; j < props.vSteps; j++) {
-        const [x00, y00, z00] = calcVert(u, v, x, y, z);
-        const [x01, y01, z01] = calcVert(u, v + vStep, x, y, z);
-        const [x10, y10, z10] = calcVert(u + uStep, v, x, y, z);
-        const [x11, y11, z11] = calcVert(u + uStep, v + vStep, x, y, z);
-
-        vertsArray.push(x11, y11, z11);
-        vertsArray.push(x10, y10, z10);
-        vertsArray.push(x00, y00, z00);
-
-        vertsArray.push(x00, y00, z00);
-        vertsArray.push(x01, y01, z01);
-        vertsArray.push(x11, y11, z11);
-
-        uvsArray.push((i + 1) / props.uSteps, (j + 1) / props.vSteps);
-        uvsArray.push((i + 1) / props.uSteps, j / props.vSteps);
+      for (let j = 0; j <= props.vSteps; j++) {
+        const [vertX, vertY, vertZ] = calcVert(u, v, x, y, z);
+        vertsArray.push(vertX, vertY, vertZ);
         uvsArray.push(i / props.uSteps, j / props.vSteps);
 
-        uvsArray.push(i / props.uSteps, j / props.vSteps);
-        uvsArray.push(i / props.uSteps, (j + 1) / props.vSteps);
-        uvsArray.push((i + 1) / props.uSteps, (j + 1) / props.vSteps);
+        if (i > 0 && j > 0) {
+          const a = getIndex(i - 1, j - 1, props.vSteps + 1);
+          const b = getIndex(i - 1, j, props.vSteps + 1);
+          const c = getIndex(i, j - 1, props.vSteps + 1);
+          const d = getIndex(i, j, props.vSteps + 1);
 
-        indicesArray.push(indicesArray.length);
-        indicesArray.push(indicesArray.length);
-        indicesArray.push(indicesArray.length);
-
-        indicesArray.push(indicesArray.length);
-        indicesArray.push(indicesArray.length);
-        indicesArray.push(indicesArray.length);
+          indicesArray.push(c, b, a);
+          indicesArray.push(b, c, d);
+        }
 
         v += vStep;
       }
@@ -79,7 +64,7 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
     if (!ref) return;
 
     ref.computeVertexNormals();
-    console.log(ref);
+    ref.computeTangents();
   }, [vertices, uvs]);
 
   return (
@@ -114,6 +99,11 @@ function calcVert(
   z: ParametricFunction
 ): [number, number, number] {
   return [x(u, v), y(u, v), z(u, v)];
+}
+
+function getIndex(i: number, j: number, jLength: number): number {
+  let value = i * jLength + j;
+  return value;
 }
 
 export default ParametricGeometry;
