@@ -45,8 +45,8 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
           const c = getIndex(i, j - 1, props.vSteps + 1);
           const d = getIndex(i, j, props.vSteps + 1);
 
-          indicesArray.push(c, b, a);
-          indicesArray.push(b, c, d);
+          makeFaceIfValid(indicesArray, c, b, a, vertsArray);
+          makeFaceIfValid(indicesArray, b, c, d, vertsArray);
         }
 
         v += vStep;
@@ -89,6 +89,30 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
       />
     </bufferGeometry>
   );
+}
+
+function makeFaceIfValid(
+  indicesArray: number[],
+  a: number,
+  b: number,
+  c: number,
+  vertsArray: number[]
+) {
+  const indices = [a, b, c];
+  for (let i = 0; i < indices.length; i++) {
+    const faceIndex1 = indices[i];
+    const faceIndex2 = indices[(i + 1) % 3];
+
+    let matches = true;
+    for (let j = 0; j < 3; j++) {
+      matches &&=
+        vertsArray[faceIndex1 * 3 + j] == vertsArray[faceIndex2 * 3 + j];
+    }
+
+    if (matches) return;
+  }
+
+  indicesArray.push(a, b, c);
 }
 
 function calcVert(
