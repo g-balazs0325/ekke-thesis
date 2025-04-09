@@ -33,14 +33,15 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
     const [vMin, vMax] = props.vRange;
     const uDiff = uMax - uMin;
     const vDiff = vMax - vMin;
-    const uStep = uDiff / props.uSteps;
-    const vStep = vDiff / props.vSteps;
 
     let u = uMin;
     let v = vMin;
     for (let i = 0; i <= props.uSteps; i++) {
-      v = vMin;
+      u = uMin + uDiff * (i / props.uSteps);
+
       for (let j = 0; j <= props.vSteps; j++) {
+        v = vMin + vDiff * (j / props.vSteps);
+
         const [vertX, vertY, vertZ] = calcVert(u, v, x, y, z);
         vertsArray.push(vertX, vertY, vertZ);
         uvsArray.push(i / props.uSteps, j / props.vSteps);
@@ -54,10 +55,7 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
           makeFaceIfValid(indicesArray, c, b, a, vertsArray);
           makeFaceIfValid(indicesArray, b, c, d, vertsArray);
         }
-
-        v += vStep;
       }
-      u += uStep;
     }
 
     const vertices = new Float32Array(vertsArray);
@@ -70,7 +68,7 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
     if (!ref) return;
 
     ref.computeVertexNormals();
-    fixVertexNormals(ref);
+    weldCloseVertices(ref);
     ref.computeTangents();
   }, [vertices, uvs]);
 
@@ -137,7 +135,7 @@ function getIndex(i: number, j: number, jLength: number): number {
   return value;
 }
 
-function fixVertexNormals(ref: BufferGeometry<NormalBufferAttributes>) {
+function weldCloseVertices(ref: BufferGeometry<NormalBufferAttributes>) {
   const vertices = ref.getAttribute("position");
   const normals = ref.getAttribute("normal");
   const cache: VertexCacheItem[] = [];
@@ -147,7 +145,9 @@ function fixVertexNormals(ref: BufferGeometry<NormalBufferAttributes>) {
     let cacheItem: VertexCacheItem;
 
     tempVector.fromBufferAttribute(vertices, i);
-    cacheItem = cache.find((value) => value.position.equals(tempVector));
+    cacheItem = cache.find((value) =>
+      vector3Equals(tempVector, value.position)
+    );
     if (cacheItem === undefined) {
       cacheItem = {
         position: tempVector.clone(),
@@ -161,13 +161,25 @@ function fixVertexNormals(ref: BufferGeometry<NormalBufferAttributes>) {
     cacheItem.normal.add(tempVector.fromBufferAttribute(normals, i));
   }
 
-  cache.forEach((value) => {
-    if (value.indices.length <= 1) return;
-    const normal = value.normal.normalize();
-    value.indices.forEach((value) => {
-      normals.setXYZ(value, normal.x, normal.y, normal.z);
+  cache.forEach((cacheItem) => {
+    if (cacheItem.indices.length <= 1) return;
+    const normal = cacheItem.normal.normalize();
+    const position = cacheItem.position;
+    cacheItem.indices.forEach((vertexIndex) => {
+      vertices.setXYZ(vertexIndex, position.x, position.y, position.z);
+      normals.setXYZ(vertexIndex, normal.x, normal.y, normal.z);
     });
   });
+}
+
+function vector3Equals(a: Vector3, b: Vector3, eps = 1e-14): boolean {
+  const aValues = [a.x, a.y, a.z];
+  const bValues = [b.x, b.y, b.z];
+
+  for (let i = 0; i < aValues.length; i++)
+    if (Math.abs(aValues[i] - bValues[i]) >= eps) return false;
+
+  return true;
 }
 
 export default ParametricGeometry;
