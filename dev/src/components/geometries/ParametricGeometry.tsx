@@ -1,17 +1,23 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { BufferGeometry } from "three";
+import { BufferGeometry, NormalBufferAttributes, Vector3 } from "three";
 
 type BufferGeometryRef = React.Ref<BufferGeometry>;
 
 export type ParametricFunction = (u: number, v: number) => number;
+type RangeTuple = [start: number, end: number];
+type VertexCacheItem = {
+  position: Vector3;
+  indices: number[];
+  normal: Vector3;
+};
 
 export interface ParametricGeometryProps {
   x: ParametricFunction;
   y: ParametricFunction;
   z: ParametricFunction;
-  uRange: [number, number];
+  uRange: RangeTuple;
   uSteps: number;
-  vRange: [number, number];
+  vRange: RangeTuple;
   vSteps: number;
 }
 
@@ -64,6 +70,7 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
     if (!ref) return;
 
     ref.computeVertexNormals();
+    fixVertexNormals(ref);
     ref.computeTangents();
   }, [vertices, uvs]);
 
@@ -128,6 +135,39 @@ function calcVert(
 function getIndex(i: number, j: number, jLength: number): number {
   let value = i * jLength + j;
   return value;
+}
+
+function fixVertexNormals(ref: BufferGeometry<NormalBufferAttributes>) {
+  const vertices = ref.getAttribute("position");
+  const normals = ref.getAttribute("normal");
+  const cache: VertexCacheItem[] = [];
+  const tempVector = new Vector3();
+
+  for (let i = 0; i < vertices.count; i++) {
+    let cacheItem: VertexCacheItem;
+
+    tempVector.fromBufferAttribute(vertices, i);
+    cacheItem = cache.find((value) => value.position.equals(tempVector));
+    if (cacheItem === undefined) {
+      cacheItem = {
+        position: tempVector.clone(),
+        indices: [],
+        normal: new Vector3(),
+      };
+      cache.push(cacheItem);
+    }
+
+    cacheItem.indices.push(i);
+    cacheItem.normal.add(tempVector.fromBufferAttribute(normals, i));
+  }
+
+  cache.forEach((value) => {
+    if (value.indices.length <= 1) return;
+    const normal = value.normal.normalize();
+    value.indices.forEach((value) => {
+      normals.setXYZ(value, normal.x, normal.y, normal.z);
+    });
+  });
 }
 
 export default ParametricGeometry;
