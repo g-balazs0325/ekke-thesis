@@ -2,23 +2,21 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { BufferGeometry, NormalBufferAttributes, Vector3 } from "three";
 
 type BufferGeometryRef = React.Ref<BufferGeometry>;
-
-export type ParametricFunction = (u: number, v: number) => number;
 type RangeTuple = [start: number, end: number];
 type VertexCacheItem = {
-  position: Vector3;
   indices: number[];
   normal: Vector3;
 };
+type ParametricFunction = (u: number, v: number) => number;
 
-export interface ParametricGeometryProps {
-  x: ParametricFunction;
-  y: ParametricFunction;
-  z: ParametricFunction;
+interface ParametricGeometryProps {
+  xFn: ParametricFunction;
+  yFn: ParametricFunction;
+  zFn: ParametricFunction;
   uRange: RangeTuple;
-  uSteps: number;
+  uSegments: number;
   vRange: RangeTuple;
-  vSteps: number;
+  vSegments: number;
 }
 
 export function ParametricGeometry(props: ParametricGeometryProps) {
@@ -28,29 +26,33 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
     const uvsArray: number[] = [];
     const indicesArray: number[] = [];
 
-    const [x, y, z] = [props.x, props.y, props.z];
+    const [xFn, yFn, zFn] = [props.xFn, props.yFn, props.zFn];
     const [uMin, uMax] = props.uRange;
     const [vMin, vMax] = props.vRange;
     const uDiff = uMax - uMin;
     const vDiff = vMax - vMin;
+    const uSegments = props.uSegments;
+    const vSegments = props.vSegments;
 
     let u = uMin;
     let v = vMin;
-    for (let i = 0; i <= props.uSteps; i++) {
-      u = uMin + uDiff * (i / props.uSteps);
+    for (let i = 0; i <= uSegments; i++) {
+      u = uMin + uDiff * (i / uSegments);
 
-      for (let j = 0; j <= props.vSteps; j++) {
-        v = vMin + vDiff * (j / props.vSteps);
+      for (let j = 0; j <= vSegments; j++) {
+        v = vMin + vDiff * (j / vSegments);
 
-        const [vertX, vertY, vertZ] = calcVert(u, v, x, y, z);
-        vertsArray.push(vertX, vertY, vertZ);
-        uvsArray.push(i / props.uSteps, j / props.vSteps);
+        const [x, y, z] = calculateVertex(u, v, xFn, yFn, zFn);
+        vertsArray.push(x, y, z);
+
+        uvsArray.push(i / uSegments, j / vSegments); // TODO: UV leképezés
 
         if (i > 0 && j > 0) {
-          const a = getIndex(i - 1, j - 1, props.vSteps + 1);
-          const b = getIndex(i - 1, j, props.vSteps + 1);
-          const c = getIndex(i, j - 1, props.vSteps + 1);
-          const d = getIndex(i, j, props.vSteps + 1);
+          const jLength = vSegments + 1;
+          const a = getIndexFrom2D(i - 1, j - 1, jLength);
+          const b = getIndexFrom2D(i - 1, j, jLength);
+          const c = getIndexFrom2D(i, j - 1, jLength);
+          const d = getIndexFrom2D(i, j, jLength);
 
           makeFaceIfValid(indicesArray, c, b, a, vertsArray);
           makeFaceIfValid(indicesArray, b, c, d, vertsArray);
@@ -63,12 +65,13 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
     const indices = new Uint32Array(indicesArray);
     return [vertices, uvs, indices];
   }, [props, geometryRef]);
+
   useEffect(() => {
     const ref = geometryRef.current;
     if (!ref) return;
 
     ref.computeVertexNormals();
-    weldCloseVertices(ref);
+    mergeVertexNormals(ref);
     ref.computeTangents();
   }, [vertices, uvs]);
 
@@ -104,14 +107,17 @@ function makeFaceIfValid(
   vertsArray: number[]
 ) {
   const indices = [a, b, c];
-  for (let i = 0; i < indices.length; i++) {
-    const faceIndex1 = indices[i];
-    const faceIndex2 = indices[(i + 1) % 3];
+  const length = 3;
+  for (let i = 0; i < length; i++) {
+    const vertIndex1 = indices[i];
+    const vertIndex2 = indices[(i + 1) % length];
 
     let matches = true;
-    for (let j = 0; j < 3; j++) {
-      matches &&=
-        vertsArray[faceIndex1 * 3 + j] == vertsArray[faceIndex2 * 3 + j];
+    const dimensions = 3;
+    for (let j = 0; j < dimensions; j++) {
+      const coord1 = vertsArray[vertIndex1 * dimensions + j];
+      const coord2 = vertsArray[vertIndex2 * dimensions + j];
+      matches &&= coord1 == coord2;
     }
 
     if (matches) return;
@@ -120,66 +126,68 @@ function makeFaceIfValid(
   indicesArray.push(a, b, c);
 }
 
-function calcVert(
+function calculateVertex(
   u: number,
   v: number,
-  x: ParametricFunction,
-  y: ParametricFunction,
-  z: ParametricFunction
+  xFn: ParametricFunction,
+  yFn: ParametricFunction,
+  zFn: ParametricFunction
 ): [number, number, number] {
-  return [x(u, v), y(u, v), z(u, v)];
+  const x = roundToEps(xFn(u, v));
+  const y = roundToEps(yFn(u, v));
+  const z = roundToEps(zFn(u, v));
+  return [x, y, z];
 }
 
-function getIndex(i: number, j: number, jLength: number): number {
-  let value = i * jLength + j;
+function getIndexFrom2D(i: number, j: number, jLength: number): number {
+  const value = i * jLength + j;
   return value;
 }
 
-function weldCloseVertices(ref: BufferGeometry<NormalBufferAttributes>) {
+function mergeVertexNormals(ref: BufferGeometry<NormalBufferAttributes>) {
   const vertices = ref.getAttribute("position");
   const normals = ref.getAttribute("normal");
-  const cache: VertexCacheItem[] = [];
+
+  const cache = new Map<string, VertexCacheItem>();
   const tempVector = new Vector3();
 
-  for (let i = 0; i < vertices.count; i++) {
+  const verticesCount = vertices.count;
+  for (let i = 0; i < verticesCount; i++) {
     let cacheItem: VertexCacheItem;
 
-    tempVector.fromBufferAttribute(vertices, i);
-    cacheItem = cache.find((value) =>
-      vector3Equals(tempVector, value.position)
-    );
-    if (cacheItem === undefined) {
+    const vertex = tempVector.fromBufferAttribute(vertices, i);
+    const hash = calculateCacheKey(vertex);
+
+    cacheItem = cache.get(hash);
+    if (!cacheItem) {
       cacheItem = {
-        position: tempVector.clone(),
         indices: [],
         normal: new Vector3(),
       };
-      cache.push(cacheItem);
+      cache.set(hash, cacheItem);
     }
 
+    const normal = tempVector.fromBufferAttribute(normals, i);
     cacheItem.indices.push(i);
-    cacheItem.normal.add(tempVector.fromBufferAttribute(normals, i));
+    cacheItem.normal.add(normal);
   }
 
-  cache.forEach((cacheItem) => {
-    if (cacheItem.indices.length <= 1) return;
+  for (const cacheItem of cache.values()) {
+    if (cacheItem.indices.length <= 1) continue;
+
     const normal = cacheItem.normal.normalize();
-    const position = cacheItem.position;
-    cacheItem.indices.forEach((vertexIndex) => {
-      vertices.setXYZ(vertexIndex, position.x, position.y, position.z);
-      normals.setXYZ(vertexIndex, normal.x, normal.y, normal.z);
-    });
-  });
+    for (const index of cacheItem.indices) {
+      normals.setXYZ(index, normal.x, normal.y, normal.z);
+    }
+  }
 }
 
-function vector3Equals(a: Vector3, b: Vector3, eps = 1e-14): boolean {
-  const aValues = [a.x, a.y, a.z];
-  const bValues = [b.x, b.y, b.z];
+function roundToEps(x: number, eps = 1e-14): number {
+  return Math.round(x / eps) * eps;
+}
 
-  for (let i = 0; i < aValues.length; i++)
-    if (Math.abs(aValues[i] - bValues[i]) >= eps) return false;
-
-  return true;
+function calculateCacheKey(v: Vector3): string {
+  return JSON.stringify(v.toArray());
 }
 
 export default ParametricGeometry;

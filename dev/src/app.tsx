@@ -104,13 +104,13 @@ class MyApp extends React.Component {
 
           <mesh>
             <ParametricGeometry
-              x={(u, v) => Math.cos(u) * Math.sin(v)}
-              y={(u, v) => Math.cos(v)}
-              z={(u, v) => Math.sin(u) * Math.sin(v)}
+              xFn={(u, v) => Math.cos(u) * Math.sin(v)}
+              yFn={(u, v) => Math.cos(v)}
+              zFn={(u, v) => Math.sin(u) * Math.sin(v)}
               uRange={[0, 2 * Math.PI]}
-              uSteps={8}
+              uSegments={8}
               vRange={[0, Math.PI]}
-              vSteps={8}
+              vSegments={8}
             />
             <meshPhysicalMaterial
               wireframe={this.state.wireframe}
