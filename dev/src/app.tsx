@@ -24,6 +24,7 @@ import FacesPainter from "./core/painting/FacesPainter";
 import CircleSelector from "./core/painting/selectors/CircleSelector";
 import Selector from "./core/painting/selectors/Selector";
 import ParametricGeometry from "./components/geometries/ParametricGeometry";
+import { evaluate } from "mathjs";
 
 enum HdriEnum {
   Studio = "Studio",
@@ -60,10 +61,23 @@ class MyApp extends React.Component {
   public metalnessIntensity = 0;
   private gui: GUI;
 
+  private parametricProps = {
+    xFn: "cos(u) * sin(v)",
+    yFn: "cos(v)",
+    zFn: "sin(u) * sin(v)",
+    uStart: "0",
+    uEnd: "2 * pi",
+    uSegments: 16,
+    vStart: "0",
+    vEnd: "pi",
+    vSegments: 16,
+  };
+
   state = {
     wireframe: false,
     hdri: env_studio,
     useHdriAsBackground: true,
+    meshRegenTimestamp: Date.now(),
   };
 
   constructor(props: unknown) {
@@ -78,6 +92,8 @@ class MyApp extends React.Component {
   }
 
   render(): React.ReactElement {
+    const meshProps = this.parametricProps;
+
     return (
       <React.StrictMode>
         <Canvas
@@ -104,13 +120,13 @@ class MyApp extends React.Component {
 
           <mesh>
             <ParametricGeometry
-              xFn={(u, v) => Math.cos(u) * Math.sin(v)}
-              yFn={(u, v) => Math.cos(v)}
-              zFn={(u, v) => Math.sin(u) * Math.sin(v)}
-              uRange={[0, 2 * Math.PI]}
-              uSegments={8}
-              vRange={[0, Math.PI]}
-              vSegments={8}
+              xFn={(u, v) => evaluate(meshProps.xFn, { u: u, v: v })}
+              yFn={(u, v) => evaluate(meshProps.yFn, { u: u, v: v })}
+              zFn={(u, v) => evaluate(meshProps.zFn, { u: u, v: v })}
+              uRange={[evaluate(meshProps.uStart), evaluate(meshProps.uEnd)]}
+              uSegments={meshProps.uSegments}
+              vRange={[evaluate(meshProps.vStart), evaluate(meshProps.vEnd)]}
+              vSegments={meshProps.vSegments}
             />
             <meshPhysicalMaterial
               wireframe={this.state.wireframe}
@@ -195,6 +211,42 @@ class MyApp extends React.Component {
     folderBrush
       .add(this as MyApp, "metalnessIntensity", 0, 255, 1)
       .name("Metalness");
+
+    const folderMesh = this.gui.addFolder("Mesh generation");
+    const folderMeshFunctions = folderMesh.addFolder("Equations");
+    folderMeshFunctions.add(this.parametricProps, "xFn").name("X");
+    folderMeshFunctions.add(this.parametricProps, "yFn").name("Y");
+    folderMeshFunctions.add(this.parametricProps, "zFn").name("Z");
+    const folderMeshU = folderMesh.addFolder("U parameters");
+    folderMeshU.add(this.parametricProps, "uStart").name("Start");
+    folderMeshU.add(this.parametricProps, "uEnd").name("End");
+    folderMeshU.add(this.parametricProps, "uSegments", 1).name("Segments");
+    const folderMeshV = folderMesh.addFolder("V parameters");
+    folderMeshV.add(this.parametricProps, "vStart").name("Start");
+    folderMeshV.add(this.parametricProps, "vEnd").name("End");
+    folderMeshV.add(this.parametricProps, "vSegments", 1).name("Segments");
+
+    folderMesh.add(this as MyApp, "regenerateMesh").name("Regenerate");
+  }
+
+  public regenerateMesh(): void {
+    try {
+      const meshProps = this.parametricProps;
+      const scopes = { u: 0, v: 0 };
+      this.throwOnBadExpression("X", meshProps.xFn, scopes);
+      this.throwOnBadExpression("Y", meshProps.yFn, scopes);
+      this.throwOnBadExpression("Z", meshProps.zFn, scopes);
+
+      this.throwOnBadExpression("U Start", meshProps.uStart);
+      this.throwOnBadExpression("U End", meshProps.uEnd);
+
+      this.throwOnBadExpression("V Start", meshProps.vStart);
+      this.throwOnBadExpression("V End", meshProps.vEnd);
+
+      this.setState({ meshRegenTimestamp: Date.now() });
+    } catch ({ message }) {
+      window.dialog.showError("Input error", message);
+    }
   }
 
   private initializeCanvasTexture(
@@ -245,6 +297,23 @@ class MyApp extends React.Component {
     painter.setColor(new Color(valueM, valueM, valueM));
     painter.paint<MeshPhysicalMaterial>("metalnessMap");
     painter.endPainting();
+  }
+
+  private throwOnBadExpression(
+    readableFieldName: string,
+    expr: string,
+    scope: object = {}
+  ): void {
+    try {
+      const result = evaluate(expr, scope);
+      if (typeof result != "number") {
+        throw new SyntaxError("Result is not a number");
+      }
+    } catch ({ message }) {
+      throw new SyntaxError(
+        `Invalid expression at field '${readableFieldName}': "${message}"`
+      );
+    }
   }
 }
 
