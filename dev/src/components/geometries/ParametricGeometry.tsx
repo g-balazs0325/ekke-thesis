@@ -32,7 +32,7 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
       .setUParameters(props.uRange[0], props.uRange[1], props.uSegments)
       .setVParameters(props.vRange[0], props.vRange[1], props.vSegments)
       .generate();
-  }, [geometryRef.current]);
+  }, [geometryRef.current, props]);
 
   return <bufferGeometry ref={geometryRef} />;
 }
