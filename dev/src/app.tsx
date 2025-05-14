@@ -24,7 +24,7 @@ import FacesPainter from "./core/painting/FacesPainter";
 import CircleSelector from "./core/painting/selectors/CircleSelector";
 import Selector from "./core/painting/selectors/Selector";
 import ParametricGeometry from "./components/geometries/ParametricGeometry";
-import { evaluate } from "mathjs";
+import { compile, evaluate } from "mathjs";
 
 enum HdriEnum {
   Studio = "Studio",
@@ -94,6 +94,9 @@ class MyApp extends React.Component {
 
   render(): React.ReactElement {
     const meshProps = this.validatedParametricProps;
+    const compiledX = compile(meshProps.xFn);
+    const compiledY = compile(meshProps.yFn);
+    const compiledZ = compile(meshProps.zFn);
 
     return (
       <React.StrictMode>
@@ -121,9 +124,9 @@ class MyApp extends React.Component {
 
           <mesh>
             <ParametricGeometry
-              xFn={(u, v) => evaluate(meshProps.xFn, { u: u, v: v })}
-              yFn={(u, v) => evaluate(meshProps.yFn, { u: u, v: v })}
-              zFn={(u, v) => evaluate(meshProps.zFn, { u: u, v: v })}
+              xFn={(u, v) => compiledX.evaluate({ u: u, v: v })}
+              yFn={(u, v) => compiledY.evaluate({ u: u, v: v })}
+              zFn={(u, v) => compiledZ.evaluate({ u: u, v: v })}
               uRange={[evaluate(meshProps.uStart), evaluate(meshProps.uEnd)]}
               uSegments={meshProps.uSegments}
               vRange={[evaluate(meshProps.vStart), evaluate(meshProps.vEnd)]}
