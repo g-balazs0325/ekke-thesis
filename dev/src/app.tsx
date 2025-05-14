@@ -72,6 +72,7 @@ class MyApp extends React.Component {
     vEnd: "pi",
     vSegments: 16,
   };
+  private validatedParametricProps = { ...this.parametricProps };
 
   state = {
     wireframe: false,
@@ -92,7 +93,7 @@ class MyApp extends React.Component {
   }
 
   render(): React.ReactElement {
-    const meshProps = this.parametricProps;
+    const meshProps = this.validatedParametricProps;
 
     return (
       <React.StrictMode>
@@ -243,6 +244,7 @@ class MyApp extends React.Component {
       this.throwOnBadExpression("V Start", meshProps.vStart);
       this.throwOnBadExpression("V End", meshProps.vEnd);
 
+      this.validatedParametricProps = { ...this.parametricProps };
       this.setState({ meshRegenTimestamp: Date.now() });
     } catch ({ message }) {
       window.dialog.showError("Input error", message);
