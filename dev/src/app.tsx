@@ -23,7 +23,9 @@ import RaycastFaceSelector from "./core/painting/selectors/RaycastFaceSelector";
 import FacesPainter from "./core/painting/FacesPainter";
 import CircleSelector from "./core/painting/selectors/CircleSelector";
 import Selector from "./core/painting/selectors/Selector";
-import ParametricGeometry from "./components/geometries/ParametricGeometry";
+import ParametricGeometry, {
+  ParametricFunction,
+} from "./components/geometries/ParametricGeometry";
 import { compile, evaluate } from "mathjs";
 
 enum HdriEnum {
@@ -35,6 +37,24 @@ enum HdriEnum {
 enum SelectorEnum {
   Raycast = "Raycast",
   Circle = "Circle",
+}
+
+interface MyAppProps {
+  wireframe?: boolean;
+  hdri?: string;
+  useHdriAsBackground?: boolean;
+
+  parametricProps?: {
+    xFn: ParametricFunction;
+    yFn: ParametricFunction;
+    zFn: ParametricFunction;
+    uStart: number;
+    uEnd: number;
+    uSegments: number;
+    vStart: number;
+    vEnd: number;
+    vSegments: number;
+  };
 }
 
 class MyApp extends React.Component {
@@ -72,13 +92,11 @@ class MyApp extends React.Component {
     vEnd: "pi",
     vSegments: 16,
   };
-  private validatedParametricProps = { ...this.parametricProps };
 
-  state = {
+  state: MyAppProps = {
     wireframe: false,
     hdri: env_studio,
     useHdriAsBackground: true,
-    meshRegenTimestamp: Date.now(),
   };
 
   constructor(props: unknown) {
@@ -86,6 +104,26 @@ class MyApp extends React.Component {
     this.canvasRef = React.createRef();
     this.textureRef = React.createRef();
     this.state.hdri = this.hdris.get(this.currentHdriName);
+    this.state.parametricProps = this.compileParametricProperties();
+  }
+
+  private compileParametricProperties(): typeof this.state.parametricProps {
+    const meshProps = this.parametricProps;
+    const compiledX = compile(meshProps.xFn);
+    const compiledY = compile(meshProps.yFn);
+    const compiledZ = compile(meshProps.zFn);
+
+    return {
+      xFn: (u: number, v: number) => compiledX.evaluate({ u: u, v: v }),
+      yFn: (u: number, v: number) => compiledY.evaluate({ u: u, v: v }),
+      zFn: (u: number, v: number) => compiledZ.evaluate({ u: u, v: v }),
+      uStart: evaluate(meshProps.uStart),
+      uEnd: evaluate(meshProps.uEnd),
+      uSegments: meshProps.uSegments,
+      vStart: evaluate(meshProps.vStart),
+      vEnd: evaluate(meshProps.vEnd),
+      vSegments: meshProps.vSegments,
+    };
   }
 
   componentWillUnmount(): void {
@@ -93,10 +131,7 @@ class MyApp extends React.Component {
   }
 
   render(): React.ReactElement {
-    const meshProps = this.validatedParametricProps;
-    const compiledX = compile(meshProps.xFn);
-    const compiledY = compile(meshProps.yFn);
-    const compiledZ = compile(meshProps.zFn);
+    const meshProps = this.state.parametricProps;
 
     return (
       <React.StrictMode>
@@ -123,15 +158,7 @@ class MyApp extends React.Component {
           <ambientLight intensity={0.5} />
 
           <mesh>
-            <ParametricGeometry
-              xFn={(u, v) => compiledX.evaluate({ u: u, v: v })}
-              yFn={(u, v) => compiledY.evaluate({ u: u, v: v })}
-              zFn={(u, v) => compiledZ.evaluate({ u: u, v: v })}
-              uRange={[evaluate(meshProps.uStart), evaluate(meshProps.uEnd)]}
-              uSegments={meshProps.uSegments}
-              vRange={[evaluate(meshProps.vStart), evaluate(meshProps.vEnd)]}
-              vSegments={meshProps.vSegments}
-            />
+            <ParametricGeometry {...meshProps} />
             <meshPhysicalMaterial
               wireframe={this.state.wireframe}
               roughness={1}
@@ -247,8 +274,7 @@ class MyApp extends React.Component {
       this.throwOnBadExpression("V Start", meshProps.vStart);
       this.throwOnBadExpression("V End", meshProps.vEnd);
 
-      this.validatedParametricProps = { ...this.parametricProps };
-      this.setState({ meshRegenTimestamp: Date.now() });
+      this.setState({ parametricProps: this.compileParametricProperties() });
     } catch ({ message }) {
       window.dialog.showError("Input error", message);
     }

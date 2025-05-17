@@ -3,17 +3,18 @@ import { ParametricGeometryGenerator } from "../../core/geometries/ParametricGeo
 import { BufferGeometry } from "three";
 
 type BufferGeometryRef = React.Ref<BufferGeometry>;
-type RangeTuple = [start: number, end: number];
 
-type ParametricFunction = (u: number, v: number) => number;
+export type ParametricFunction = (u: number, v: number) => number;
 
 interface ParametricGeometryProps {
   xFn: ParametricFunction;
   yFn: ParametricFunction;
   zFn: ParametricFunction;
-  uRange: RangeTuple;
+  uStart: number;
+  uEnd: number;
   uSegments: number;
-  vRange: RangeTuple;
+  vStart: number;
+  vEnd: number;
   vSegments: number;
 }
 
@@ -29,10 +30,10 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
       .setXFunction(props.xFn)
       .setYFunction(props.yFn)
       .setZFunction(props.zFn)
-      .setUParameters(props.uRange[0], props.uRange[1], props.uSegments)
-      .setVParameters(props.vRange[0], props.vRange[1], props.vSegments)
+      .setUParameters(props.uStart, props.uEnd, props.uSegments)
+      .setVParameters(props.vStart, props.vEnd, props.vSegments)
       .generate();
-  }, [geometryRef.current, props]);
+  }, [...Object.values(props)]);
 
   return <bufferGeometry ref={geometryRef} />;
 }
