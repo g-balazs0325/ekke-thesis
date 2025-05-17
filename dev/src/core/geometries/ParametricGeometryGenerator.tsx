@@ -58,6 +58,7 @@ export class ParametricGeometryGenerator {
 
   public generate(): void {
     this.emptyState();
+    this.clearGeometry();
 
     this.generateShape();
     this.generateNormalsAndTangents();
@@ -67,6 +68,13 @@ export class ParametricGeometryGenerator {
     this.state.position = [];
     this.state.uv = [];
     this.state.index = [];
+  }
+  private clearGeometry() {
+    this.geometry.deleteAttribute("position");
+    this.geometry.deleteAttribute("uv");
+    this.geometry.deleteAttribute("normal");
+    this.geometry.deleteAttribute("tangent");
+    this.geometry.setIndex(null);
   }
   private generateShape(): void {
     const uDiff = this.uEnd - this.uStart;
