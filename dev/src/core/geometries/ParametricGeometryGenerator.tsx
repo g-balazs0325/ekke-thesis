@@ -63,6 +63,7 @@ export class ParametricGeometryGenerator {
 
     this.generateShape();
     this.generateNormalsAndTangents();
+    this.generateBounds();
     this.updateBufferVersions();
   }
 
@@ -103,6 +104,10 @@ export class ParametricGeometryGenerator {
     this.geometry.computeVertexNormals();
     this.averageOverlappingVertexNormals();
     this.geometry.computeTangents();
+  }
+  private generateBounds() {
+    this.geometry.computeBoundingBox();
+    this.geometry.computeBoundingSphere();
   }
   private updateBufferVersions(): void {
     const version = this.state.version;
