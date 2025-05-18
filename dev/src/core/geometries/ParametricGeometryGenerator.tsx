@@ -25,6 +25,7 @@ export class ParametricGeometryGenerator {
     position: new Array<number>(),
     uv: new Array<number>(),
     index: new Array<number>(),
+    version: 0,
   };
 
   public setGeometry(geometry: BufferGeometry): this {
@@ -57,17 +58,20 @@ export class ParametricGeometryGenerator {
   }
 
   public generate(): void {
-    this.emptyState();
+    this.resetState();
     this.clearGeometry();
 
     this.generateShape();
     this.generateNormalsAndTangents();
+    this.updateBufferVersions();
   }
 
-  private emptyState(): void {
+  private resetState(): void {
     this.state.position = [];
     this.state.uv = [];
     this.state.index = [];
+
+    this.state.version = (this.geometry.getIndex()?.version ?? 0) + 1;
   }
   private clearGeometry() {
     this.geometry.deleteAttribute("position");
@@ -99,6 +103,16 @@ export class ParametricGeometryGenerator {
     this.geometry.computeVertexNormals();
     this.averageOverlappingVertexNormals();
     this.geometry.computeTangents();
+  }
+  private updateBufferVersions(): void {
+    const version = this.state.version;
+    const indexBuffer = this.geometry.getIndex();
+
+    indexBuffer.version = version;
+    this.updateBufferAttributeVersion("position", version);
+    this.updateBufferAttributeVersion("uv", version);
+    this.updateBufferAttributeVersion("normal", version);
+    this.updateBufferAttributeVersion("tangent", version);
   }
 
   private makeVertex(u: number, v: number): void {
@@ -155,6 +169,17 @@ export class ParametricGeometryGenerator {
       for (const index of mapItem.indices) {
         normals.setXYZ(index, normal.x, normal.y, normal.z);
       }
+    }
+  }
+
+  private updateBufferAttributeVersion(attributeName: string, version: number) {
+    const buffer = this.geometry.getAttribute(attributeName);
+    if ("version" in buffer) buffer.version = version;
+    else {
+      console.warn(
+        `Attribute '${attributeName}' might be unintentionally interleaved`
+      );
+      buffer.needsUpdate = true;
     }
   }
 
