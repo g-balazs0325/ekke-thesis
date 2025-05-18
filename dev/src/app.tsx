@@ -23,6 +23,10 @@ import RaycastFaceSelector from "./core/painting/selectors/RaycastFaceSelector";
 import FacesPainter from "./core/painting/FacesPainter";
 import CircleSelector from "./core/painting/selectors/CircleSelector";
 import Selector from "./core/painting/selectors/Selector";
+import ParametricGeometry, {
+  ParametricFunction,
+} from "./components/geometries/ParametricGeometry";
+import { compile, evaluate } from "mathjs";
 
 enum HdriEnum {
   Studio = "Studio",
@@ -33,6 +37,24 @@ enum HdriEnum {
 enum SelectorEnum {
   Raycast = "Raycast",
   Circle = "Circle",
+}
+
+interface MyAppProps {
+  wireframe?: boolean;
+  hdri?: string;
+  useHdriAsBackground?: boolean;
+
+  parametricProps?: {
+    xFn: ParametricFunction;
+    yFn: ParametricFunction;
+    zFn: ParametricFunction;
+    uStart: number;
+    uEnd: number;
+    uSegments: number;
+    vStart: number;
+    vEnd: number;
+    vSegments: number;
+  };
 }
 
 class MyApp extends React.Component {
@@ -59,7 +81,19 @@ class MyApp extends React.Component {
   public metalnessIntensity = 0;
   private gui: GUI;
 
-  state = {
+  private parametricProps = {
+    xFn: "cos(u) * sin(v)",
+    yFn: "cos(v)",
+    zFn: "sin(u) * sin(v)",
+    uStart: "0",
+    uEnd: "2 * pi",
+    uSegments: 16,
+    vStart: "0",
+    vEnd: "pi",
+    vSegments: 16,
+  };
+
+  state: MyAppProps = {
     wireframe: false,
     hdri: env_studio,
     useHdriAsBackground: true,
@@ -70,6 +104,26 @@ class MyApp extends React.Component {
     this.canvasRef = React.createRef();
     this.textureRef = React.createRef();
     this.state.hdri = this.hdris.get(this.currentHdriName);
+    this.state.parametricProps = this.compileParametricProperties();
+  }
+
+  private compileParametricProperties(): typeof this.state.parametricProps {
+    const meshProps = this.parametricProps;
+    const compiledX = compile(meshProps.xFn);
+    const compiledY = compile(meshProps.yFn);
+    const compiledZ = compile(meshProps.zFn);
+
+    return {
+      xFn: (u: number, v: number) => compiledX.evaluate({ u: u, v: v }),
+      yFn: (u: number, v: number) => compiledY.evaluate({ u: u, v: v }),
+      zFn: (u: number, v: number) => compiledZ.evaluate({ u: u, v: v }),
+      uStart: evaluate(meshProps.uStart),
+      uEnd: evaluate(meshProps.uEnd),
+      uSegments: meshProps.uSegments,
+      vStart: evaluate(meshProps.vStart),
+      vEnd: evaluate(meshProps.vEnd),
+      vSegments: meshProps.vSegments,
+    };
   }
 
   componentWillUnmount(): void {
@@ -77,6 +131,8 @@ class MyApp extends React.Component {
   }
 
   render(): React.ReactElement {
+    const meshProps = this.state.parametricProps;
+
     return (
       <React.StrictMode>
         <Canvas
@@ -102,7 +158,7 @@ class MyApp extends React.Component {
           <ambientLight intensity={0.5} />
 
           <mesh>
-            <torusKnotGeometry />
+            <ParametricGeometry {...meshProps} />
             <meshPhysicalMaterial
               wireframe={this.state.wireframe}
               roughness={1}
@@ -186,6 +242,42 @@ class MyApp extends React.Component {
     folderBrush
       .add(this as MyApp, "metalnessIntensity", 0, 255, 1)
       .name("Metalness");
+
+    const folderMesh = this.gui.addFolder("Mesh generation");
+    const folderMeshFunctions = folderMesh.addFolder("Equations");
+    folderMeshFunctions.add(this.parametricProps, "xFn").name("X");
+    folderMeshFunctions.add(this.parametricProps, "yFn").name("Y");
+    folderMeshFunctions.add(this.parametricProps, "zFn").name("Z");
+    const folderMeshU = folderMesh.addFolder("U parameters");
+    folderMeshU.add(this.parametricProps, "uStart").name("Start");
+    folderMeshU.add(this.parametricProps, "uEnd").name("End");
+    folderMeshU.add(this.parametricProps, "uSegments", 1).name("Segments");
+    const folderMeshV = folderMesh.addFolder("V parameters");
+    folderMeshV.add(this.parametricProps, "vStart").name("Start");
+    folderMeshV.add(this.parametricProps, "vEnd").name("End");
+    folderMeshV.add(this.parametricProps, "vSegments", 1).name("Segments");
+
+    folderMesh.add(this as MyApp, "regenerateMesh").name("Regenerate");
+  }
+
+  public regenerateMesh(): void {
+    try {
+      const meshProps = this.parametricProps;
+      const scopes = { u: 0, v: 0 };
+      this.throwOnBadExpression("X", meshProps.xFn, scopes);
+      this.throwOnBadExpression("Y", meshProps.yFn, scopes);
+      this.throwOnBadExpression("Z", meshProps.zFn, scopes);
+
+      this.throwOnBadExpression("U Start", meshProps.uStart);
+      this.throwOnBadExpression("U End", meshProps.uEnd);
+
+      this.throwOnBadExpression("V Start", meshProps.vStart);
+      this.throwOnBadExpression("V End", meshProps.vEnd);
+
+      this.setState({ parametricProps: this.compileParametricProperties() });
+    } catch ({ message }) {
+      window.dialog.showError("Input error", message);
+    }
   }
 
   private initializeCanvasTexture(
@@ -236,6 +328,23 @@ class MyApp extends React.Component {
     painter.setColor(new Color(valueM, valueM, valueM));
     painter.paint<MeshPhysicalMaterial>("metalnessMap");
     painter.endPainting();
+  }
+
+  private throwOnBadExpression(
+    readableFieldName: string,
+    expr: string,
+    scope: object = {}
+  ): void {
+    try {
+      const result = evaluate(expr, scope);
+      if (typeof result != "number") {
+        throw new SyntaxError("Result is not a number");
+      }
+    } catch ({ message }) {
+      throw new SyntaxError(
+        `Invalid expression at field '${readableFieldName}': "${message}"`
+      );
+    }
   }
 }
 
