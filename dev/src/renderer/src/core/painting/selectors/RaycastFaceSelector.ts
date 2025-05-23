@@ -1,7 +1,7 @@
 import { Camera, Mesh, Object3D, Vector2 } from 'three'
 import FaceData from '../datastructures/FaceData'
 import Selector from './Selector'
-import { Raycaster } from 'three/src/Three'
+import { Raycaster } from 'three'
 import CoordinateUtils from '../../utils/CoordinateUtils'
 
 export default class RaycastFaceSelector implements Selector {
