@@ -17,7 +17,7 @@ import {
 } from 'three'
 import { BlankCanvasTexture } from './components/canvas/BlankCanvasTexture'
 import { Environment, OrbitControls } from '@react-three/drei'
-import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min'
+import { GUI } from 'lil-gui'
 import RaycastFaceSelector from './core/painting/selectors/RaycastFaceSelector'
 import FacesPainter from './core/painting/FacesPainter'
 import CircleSelector from './core/painting/selectors/CircleSelector'
@@ -199,24 +199,24 @@ class App extends React.Component {
     folderHdri
       .add(this, 'currentHdriName', [...this.hdris.keys()])
       .name('HDRI theme')
-      .onChange((key) => {
+      .onChange((key: HdriEnum) => {
         const hdri: string = this.hdris.get(key)
         this.setState({ hdri: hdri })
       })
     folderHdri
       .add(this.state, 'useHdriAsBackground')
       .name('Use HDRI as background')
-      .onChange((value) => this.setState({ hdriBackground: value }))
+      .onChange((value: boolean) => this.setState({ hdriBackground: value }))
     folderHdri
       .add(this.state, 'wireframe')
       .name('Wireframe')
-      .onChange((value) => this.setState({ wireframe: value }))
+      .onChange((value: boolean) => this.setState({ wireframe: value }))
 
     const folderBrush = this.gui.addFolder('Brush options')
     folderBrush
       .add(this, 'currentSelectorName', [...this.selectors.keys()])
       .name('Selector')
-      .onChange((value) => this.painter.setSelector(this.selectors.get(value)))
+      .onChange((value: SelectorEnum) => this.painter.setSelector(this.selectors.get(value)))
     folderBrush.addColor(this, 'albedoColor').name('Albedo Color')
     folderBrush.add(this as App, 'roughnessIntensity', 0, 255, 1).name('Roughness')
     folderBrush.add(this as App, 'metalnessIntensity', 0, 255, 1).name('Metalness')
