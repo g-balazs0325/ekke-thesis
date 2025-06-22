@@ -1,4 +1,3 @@
-import { MathProps, ReactProps, ThreeElement } from '@react-three/fiber'
 import React from 'react'
 import { CanvasTexture, ColorRepresentation } from 'three'
 
@@ -63,7 +62,7 @@ export class BlankCanvasTexture extends React.Component<BlankCanvasTextureProps>
   }
 
   //TODO: különszedni egy külön osztályba
-  private setRef<T>(ref: React.ForwardedRef<T>, value: T) {
+  private setRef<T>(ref: React.ForwardedRef<T>, value: T): void {
     if (!ref) return
     if (typeof ref === 'function') ref(value)
     else ref.current = value

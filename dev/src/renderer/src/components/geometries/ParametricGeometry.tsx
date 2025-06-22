@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { ReactElement, useEffect, useRef } from 'react'
 import { ParametricGeometryGenerator } from '../../core/geometries/ParametricGeometryGenerator'
 import { BufferGeometry } from 'three'
 
@@ -18,7 +18,7 @@ interface ParametricGeometryProps {
   vSegments: number
 }
 
-export function ParametricGeometry(props: ParametricGeometryProps) {
+export function ParametricGeometry(props: ParametricGeometryProps): ReactElement {
   const geometryRef: BufferGeometryRef = useRef(null)
 
   useEffect(() => {
@@ -33,7 +33,17 @@ export function ParametricGeometry(props: ParametricGeometryProps) {
       .setUParameters(props.uStart, props.uEnd, props.uSegments)
       .setVParameters(props.vStart, props.vEnd, props.vSegments)
       .generate()
-  }, [...Object.values(props)])
+  }, [
+    props.uStart,
+    props.uEnd,
+    props.uSegments,
+    props.vStart,
+    props.vEnd,
+    props.vSegments,
+    props.xFn,
+    props.yFn,
+    props.zFn
+  ])
 
   return <bufferGeometry ref={geometryRef} />
 }

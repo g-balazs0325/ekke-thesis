@@ -42,7 +42,7 @@ export default class CircleSelector implements Selector {
     return output
   }
 
-  private selectUnsortedFaces(clientPosition: Vector2, object: Object3D, output: FaceData[]) {
+  private selectUnsortedFaces(clientPosition: Vector2, object: Object3D, output: FaceData[]): void {
     object.children.forEach((child) => {
       this.selectUnsortedFaces(clientPosition, child, output)
     })

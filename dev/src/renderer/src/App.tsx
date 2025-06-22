@@ -279,7 +279,7 @@ class App extends React.Component {
     context.stroke()
   }
 
-  private onClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
+  private onClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>): void {
     const clientPosition = new Vector2(e.clientX, e.clientY)
 
     if (!this.painter)

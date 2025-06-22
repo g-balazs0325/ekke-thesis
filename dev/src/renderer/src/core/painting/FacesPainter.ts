@@ -5,7 +5,7 @@ import FaceData from './datastructures/FaceData'
 
 export default class FacesPainter extends Painter {
   private color: Color
-  setColor(value: Color) {
+  setColor(value: Color): void {
     this.color = value
   }
 

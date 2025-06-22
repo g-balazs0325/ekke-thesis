@@ -74,7 +74,7 @@ export class ParametricGeometryGenerator {
 
     this.state.version = (this.geometry.getIndex()?.version ?? 0) + 1
   }
-  private clearGeometry() {
+  private clearGeometry(): void {
     this.geometry.deleteAttribute('position')
     this.geometry.deleteAttribute('uv')
     this.geometry.deleteAttribute('normal')
@@ -105,7 +105,7 @@ export class ParametricGeometryGenerator {
     this.averageOverlappingVertexNormals()
     this.geometry.computeTangents()
   }
-  private generateBounds() {
+  private generateBounds(): void {
     this.geometry.computeBoundingBox()
     this.geometry.computeBoundingSphere()
   }
@@ -147,7 +147,7 @@ export class ParametricGeometryGenerator {
     this.makeFaceIfValidTriangle(b, c, d)
     this.makeFaceIfValidTriangle(c, b, a)
   }
-  private updateShapeAttributes() {
+  private updateShapeAttributes(): void {
     const positionArray = new Float32Array(this.state.position)
     const uvArray = new Float32Array(this.state.uv)
     const indexArray = new Uint32Array(this.state.index)
@@ -177,7 +177,7 @@ export class ParametricGeometryGenerator {
     }
   }
 
-  private updateBufferAttributeVersion(attributeName: string, version: number) {
+  private updateBufferAttributeVersion(attributeName: string, version: number): void {
     const buffer = this.geometry.getAttribute(attributeName)
     if ('version' in buffer) buffer.version = version
     else {
@@ -208,7 +208,7 @@ export class ParametricGeometryGenerator {
     for (const abcIndex of abcIndices) indices.push(abcIndex)
   }
 
-  private fillVertexMap(map: VertexMap) {
+  private fillVertexMap(map: VertexMap): void {
     const verts = this.geometry.getAttribute('position')
     const normals = this.geometry.getAttribute('normal')
 
