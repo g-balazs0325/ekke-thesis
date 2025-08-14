@@ -1,13 +1,13 @@
 import { test, expect, beforeAll, describe } from 'vitest'
 import CoordinateUtils, { ConstantCoordinateUtilBounds } from './CoordinateUtils'
-import { Vector2 } from 'three'
+import { Vector2, Vector3 } from 'three'
 
-beforeAll(() => {
-  const bounds = new ConstantCoordinateUtilBounds(800, 600)
-  CoordinateUtils.setBounds(bounds)
-})
+describe('Window position (800x600) <=> normalized position', () => {
+  beforeAll(() => {
+    const bounds = new ConstantCoordinateUtilBounds(800, 600)
+    CoordinateUtils.setBounds(bounds)
+  })
 
-describe('Window position <=> normalized position', () => {
   test('Zero normalized position returns center of window (400, 300)', () => {
     const expected = new Vector2(400, 300)
     const actual = CoordinateUtils.normalizedToClient(new Vector2(0, 0))
@@ -67,4 +67,43 @@ describe('Window position <=> normalized position', () => {
       expect(actual).toEqual(expected)
     }
   })
+})
+
+describe('NDC and normalized coordinates (800x600 window size)', () => {
+  beforeAll(() => {
+    const bounds = new ConstantCoordinateUtilBounds(800, 600)
+    CoordinateUtils.setBounds(bounds)
+  })
+
+  test.for([
+    { normX: 0, normY: 0, depth: 0 },
+    { normX: 0, normY: 0, depth: 1 },
+    { normX: 0, normY: 0, depth: -0.75 },
+    { normX: 1, normY: 1, depth: 0 },
+    { normX: -1, normY: -1, depth: 0 },
+    { normX: 0.5, normY: -0.75, depth: 0.5 }
+  ])(
+    'NDC position with depth $depth and normalized position sharing the same XY coordinates ($normX, $normY) result in identical window coordinates',
+    ({ normX, normY, depth }) => {
+      const expected = CoordinateUtils.ndcToClient(new Vector3(normX, normY, depth))
+      const actual = CoordinateUtils.normalizedToClient(new Vector2(normX, normY))
+      expect(actual).toEqual(expected)
+    }
+  )
+
+  test.for([
+    { normX: 0, normY: 0, depth: 0, windX: 400, windY: 300 },
+    { normX: 0, normY: 0, depth: 1, windX: 400, windY: 300 },
+    { normX: 0, normY: 0, depth: -1, windX: 400, windY: 300 },
+    { normX: 0.75, normY: 1, depth: 0.23, windX: 700, windY: 0 },
+    { normX: 0.2, normY: -0.25, depth: 3.14159, windX: 480, windY: 375 }
+  ])(
+    'NDC position ($normX, $normY, with depth $depth) returns a window position ($windX, $windY) in Vector3 with the same depth',
+    ({ normX, normY, depth, windX, windY }) => {
+      const expected = new Vector3(windX, windY, depth)
+      const actual = CoordinateUtils.ndcToClientWithDepth(new Vector3(normX, normY, depth))
+
+      expect(actual).toEqual(expected)
+    }
+  )
 })
