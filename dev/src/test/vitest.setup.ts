@@ -1,8 +1,12 @@
 import { expect } from 'vitest'
 import { Vector2Like, Vector3Like } from 'three'
 
+function isNonNullObject(a: unknown): a is object {
+  return a !== null && typeof a === 'object'
+}
+
 function isVector2(a: unknown): a is Vector2Like {
-  return typeof a === 'object' && 'x' in a && 'y' in a && !('z' in a)
+  return isNonNullObject(a) && 'x' in a && 'y' in a && !('z' in a)
 }
 function vector2Equals(a: unknown, b: unknown): boolean | undefined {
   const aIsVector2 = isVector2(a)
@@ -14,7 +18,7 @@ function vector2Equals(a: unknown, b: unknown): boolean | undefined {
 }
 
 function isVector3(a: unknown): a is Vector3Like {
-  return typeof a === 'object' && 'x' in a && 'y' in a && 'z' in a
+  return isNonNullObject(a) && 'x' in a && 'y' in a && 'z' in a
 }
 function vector3Equals(a: unknown, b: unknown): boolean | undefined {
   const aIsVector3 = isVector3(a)
