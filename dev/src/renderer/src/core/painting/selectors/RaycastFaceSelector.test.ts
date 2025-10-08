@@ -2,18 +2,23 @@ import { afterEach, beforeAll, expect, test } from 'vitest'
 import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
 import {
   Camera,
+  LineBasicMaterial,
+  LineSegments,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
   Scene,
   Shape,
   ShapeGeometry,
-  Vector2
+  Vector2,
+  WebGLRenderer,
+  WireframeGeometry
 } from 'three'
 import RaycastFaceSelector from './RaycastFaceSelector'
 
 let scene: Scene
 let camera: Camera
+let renderer: WebGLRenderer
 
 function createTriangleMesh(x: number, y: number, z: number): Mesh {
   const shape = new Shape()
@@ -23,7 +28,7 @@ function createTriangleMesh(x: number, y: number, z: number): Mesh {
   shape.lineTo(-2, -2)
 
   const geometry = new ShapeGeometry(shape, 1)
-  const material = new MeshBasicMaterial()
+  const material = new MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.3 })
   const mesh = new Mesh(geometry, material)
 
   mesh.translateX(x)
@@ -33,6 +38,18 @@ function createTriangleMesh(x: number, y: number, z: number): Mesh {
   mesh.geometry.computeBoundingBox()
   return mesh
 }
+function addWireframes(): void {
+  for (const obj of scene.children) {
+    if (!('isMesh' in obj && obj.isMesh)) continue
+    const mesh = obj as Mesh
+    const wireframe = new WireframeGeometry(mesh.geometry)
+    const material = new LineBasicMaterial({ color: 0xff0000, depthTest: false })
+    const line = new LineSegments(wireframe, material)
+    line.translateOnAxis(mesh.position, 1)
+    line.updateMatrixWorld()
+    scene.add(line)
+  }
+}
 
 beforeAll(() => {
   const bounds = new ConstantCoordinateUtilBounds(800, 600)
@@ -40,9 +57,16 @@ beforeAll(() => {
 
   scene = new Scene()
   camera = new PerspectiveCamera(90, 800 / 600, 0.1, 25)
+
+  renderer = new WebGLRenderer()
+  renderer.setSize(800, 600)
+  document.body.appendChild(renderer.domElement)
 })
 
 afterEach(() => {
+  addWireframes()
+  renderer.render(scene, camera)
+
   while (scene.children.length > 0) {
     const object = scene.children[0]
     scene.remove(object)
