@@ -18,14 +18,20 @@ const HELPER_COLOR = 0xff0000
 interface RenderModeBase {
   onInitialize(viewportSize: Vector2): void
   onAddObject(scene: Scene, object: Object3D): void
+  onAddHelper(scene: Scene, object: Object3D): void
   onRenderFrame(scene: Scene, camera: Camera): void
+  canRenderFrames(): boolean
 }
 class NoneRenderMode implements RenderModeBase {
   /* eslint-disable */
   onInitialize(): void {}
   onAddObject(): void {}
+  onAddHelper(): void {}
   onRenderFrame(): void {}
   /* eslint-enable */
+  canRenderFrames(): boolean {
+    return false
+  }
 }
 class ManualRenderMode implements RenderModeBase {
   private renderer: WebGLRenderer
@@ -47,8 +53,16 @@ class ManualRenderMode implements RenderModeBase {
     line.updateMatrixWorld()
     scene.add(line)
   }
+  onAddHelper(scene: Scene, object: Object3D): void {
+    object.layers.set(HELPER_LAYER)
+    object.updateMatrixWorld()
+    scene.add(object)
+  }
   onRenderFrame(scene: Scene, camera: Camera): void {
     this.renderer.render(scene, camera)
+  }
+  canRenderFrames(): boolean {
+    return true
   }
 }
 
@@ -89,6 +103,9 @@ export default class Test3DEnvironment {
     this.scene.add(object)
     this.renderMode.onAddObject(this.scene, object)
   }
+  public addHelper(helper: Object3D): void {
+    this.renderMode.onAddHelper(this.scene, helper)
+  }
   public clearScene(): void {
     const scene = this.scene
     while (scene.children.length > 0) scene.remove(scene.children[0])
@@ -96,5 +113,8 @@ export default class Test3DEnvironment {
 
   public renderFrame(): void {
     this.renderMode.onRenderFrame(this.scene, this.camera)
+  }
+  public canRenderFrames(): boolean {
+    return this.renderMode.canRenderFrames()
   }
 }
