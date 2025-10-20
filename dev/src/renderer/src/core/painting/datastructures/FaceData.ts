@@ -3,6 +3,7 @@ import {
   Face,
   Material,
   Matrix3,
+  Matrix4,
   Mesh,
   NormalBufferAttributes,
   Vector2,
@@ -48,8 +49,7 @@ export default class FaceData {
 
     const material = Array.isArray(materials) ? materials[originalFace.materialIndex] : materials
 
-    const localToWorldMatrix = new Matrix3()
-    localToWorldMatrix.getNormalMatrix(mesh.matrixWorld)
+    const localToWorldMatrix = mesh.matrixWorld.clone()
     const vertexIndices = [originalFace.a, originalFace.b, originalFace.c]
     const vertices = this.createVertexDataForVertices(geometry, vertexIndices, localToWorldMatrix)
 
@@ -65,8 +65,7 @@ export default class FaceData {
     const faces: FaceData[] = []
     const geometry = mesh.geometry
 
-    const localToWorldMatrix = new Matrix3()
-    localToWorldMatrix.getNormalMatrix(mesh.matrixWorld)
+    const localToWorldMatrix = mesh.matrixWorld.clone()
     if (!Array.isArray(mesh.material)) {
       const material = mesh.material as Material
 
@@ -89,7 +88,7 @@ export default class FaceData {
   private static createFacesFromIndices(
     geometry: BufferGeometry<NormalBufferAttributes>,
     material: Material,
-    localToWorldMatrix: Matrix3,
+    localToWorldMatrix: Matrix4,
     start = 0,
     end = -1
   ): FaceData[] {
@@ -119,13 +118,15 @@ export default class FaceData {
   private static createVertexDataForVertices(
     geometry: BufferGeometry<NormalBufferAttributes>,
     vertexIndices: number[],
-    localToWorldMatrix: Matrix3
+    localToWorldMatrix: Matrix4
   ): VertexData[] {
     const positions = geometry.attributes.position
     const uvs = geometry.attributes.uv
     const normals = geometry.attributes.normal
 
     if (!(positions && uvs && normals)) throw new Error("Given 'mesh' is invalid") //TODO: create new error type
+
+    const normalMatrix = new Matrix3().getNormalMatrix(localToWorldMatrix)
 
     const vertices: VertexData[] = []
     vertexIndices.forEach((index) => {
@@ -139,8 +140,8 @@ export default class FaceData {
       const uv = new Vector2(uvs.getX(index), uvs.getY(index))
 
       vertices.push({
-        position: localPosition.applyMatrix3(localToWorldMatrix),
-        normal: localNormal.applyMatrix3(localToWorldMatrix).normalize(),
+        position: localPosition.applyMatrix4(localToWorldMatrix),
+        normal: localNormal.applyMatrix3(normalMatrix).normalize(),
         uv: uv
       })
     })
