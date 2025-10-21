@@ -19,6 +19,8 @@ interface RenderModeBase {
   onInitialize(viewportSize: Vector2): void
   onAddObject(scene: Scene, object: Object3D): void
   onAddHelper(scene: Scene, object: Object3D): void
+  onAddUIElement(element: HTMLElement, position: Vector2): void
+  onClearUI(): void
   onRenderFrame(scene: Scene, camera: Camera): void
   canRenderFrames(): boolean
 }
@@ -27,6 +29,8 @@ class NoneRenderMode implements RenderModeBase {
   onInitialize(): void {}
   onAddObject(): void {}
   onAddHelper(): void {}
+  onAddUIElement(): void {}
+  onClearUI(): void {}
   onRenderFrame(): void {}
   /* eslint-enable */
   canRenderFrames(): boolean {
@@ -35,11 +39,27 @@ class NoneRenderMode implements RenderModeBase {
 }
 class ManualRenderMode implements RenderModeBase {
   private renderer: WebGLRenderer
+  private ui: HTMLDivElement
 
   onInitialize(viewportSize: Vector2): void {
     this.renderer = new WebGLRenderer()
     this.renderer.setSize(viewportSize.x, viewportSize.y)
     document.body.appendChild(this.renderer.domElement)
+
+    this.initializeUI(viewportSize)
+  }
+  private initializeUI(viewportSize: Vector2): void {
+    this.ui = document.createElement('div')
+
+    const style = this.ui.style
+    style.overflow = 'hidden'
+    style.position = 'absolute'
+    style.left = '0px'
+    style.width = `${viewportSize.x}px`
+    style.top = '0px'
+    style.height = `${viewportSize.y}px`
+
+    document.body.appendChild(this.ui)
   }
   onAddObject(scene: Scene, object: Object3D): void {
     if (!(object as Mesh).isMesh) return
@@ -57,6 +77,19 @@ class ManualRenderMode implements RenderModeBase {
     object.layers.set(HELPER_LAYER)
     object.updateMatrixWorld()
     scene.add(object)
+  }
+  onAddUIElement(element: HTMLElement, position: Vector2): void {
+    const style = element.style
+    style.position = 'relative'
+    style.left = `${position.x}px`
+    style.top = `${position.y}px`
+
+    this.ui.appendChild(element)
+  }
+  onClearUI(): void {
+    while (this.ui.lastChild) {
+      this.ui.removeChild(this.ui.lastChild)
+    }
   }
   onRenderFrame(scene: Scene, camera: Camera): void {
     this.renderer.render(scene, camera)
@@ -109,6 +142,13 @@ export default class Test3DEnvironment {
   public clearScene(): void {
     const scene = this.scene
     while (scene.children.length > 0) scene.remove(scene.children[0])
+  }
+
+  public addUIElement(element: HTMLElement, position: Vector2): void {
+    this.renderMode.onAddUIElement(element, position)
+  }
+  public clearUI(): void {
+    this.renderMode.onClearUI()
   }
 
   public renderFrame(): void {

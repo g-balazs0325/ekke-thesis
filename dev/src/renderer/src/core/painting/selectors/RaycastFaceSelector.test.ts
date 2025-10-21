@@ -8,9 +8,6 @@ import {
   MeshBasicMaterial,
   OrthographicCamera,
   PerspectiveCamera,
-  Points,
-  PointsMaterial,
-  Raycaster,
   Shape,
   ShapeGeometry,
   Vector2
@@ -41,18 +38,17 @@ function createTriangleMesh(x: number, y: number, z: number): Mesh {
   mesh.geometry.computeBoundingBox()
   return mesh
 }
-function addRayHelper(screenCoords: Vector2): void {
+function addUIRayPoint(screenCoords: Vector2): void {
   if (!environment.canRenderFrames()) return
 
-  const normalized = CoordinateUtils.clientToNormalized(screenCoords)
-  const raycaster = new Raycaster()
-  raycaster.setFromCamera(normalized, environment.getCamera())
-  const ray = raycaster.ray
+  const point = document.createElement('div')
+  const style = point.style
+  style.width = '3px'
+  style.height = '3px'
+  style.transform = 'translate(-50%, -50%)'
+  style.backgroundColor = 'white'
 
-  const position = ray.origin.clone().add(ray.direction)
-  const geometry = new BufferGeometry().setFromPoints([position])
-  const point = new Points(geometry, new PointsMaterial({ size: 3, sizeAttenuation: false }))
-  environment.addHelper(point)
+  environment.addUIElement(point, screenCoords)
 }
 function addSelectionHelper(faces: FaceData[]): void {
   if (!environment.canRenderFrames()) return
@@ -83,10 +79,9 @@ afterEach(() => {
 
 describe('General tests from the center of the screen', () => {
   beforeAll(() => {
+    environment.clearUI()
     environment.setCamera(new PerspectiveCamera(90, viewportRatio, 0.1, 25))
-  })
-  beforeEach(() => {
-    addRayHelper(viewportCenter)
+    addUIRayPoint(viewportCenter)
   })
 
   test('Selection is empty when there is no intersection', () => {
@@ -149,6 +144,10 @@ describe('Tests with different projections and screen coordinates (800x600)', ()
     }
   }
 
+  beforeEach(() => {
+    environment.clearUI()
+  })
+
   test.for([
     { ...cameras.perspective50, count: 1 },
     { ...cameras.perspective90, count: 0 },
@@ -160,7 +159,7 @@ describe('Tests with different projections and screen coordinates (800x600)', ()
       environment.addObject(createTriangleMesh(0, 0, -5))
 
       const screenCoords = new Vector2(400, 150)
-      addRayHelper(screenCoords)
+      addUIRayPoint(screenCoords)
 
       const target = new RaycastFaceSelector(environment.getScene(), environment.getCamera())
       const faces = target.selectFaces(screenCoords)
@@ -180,7 +179,7 @@ describe('Tests with different projections and screen coordinates (800x600)', ()
       environment.addObject(createTriangleMesh(0, 0, -5))
 
       const screenCoords = new Vector2(290, 265)
-      addRayHelper(screenCoords)
+      addUIRayPoint(screenCoords)
 
       const target = new RaycastFaceSelector(environment.getScene(), environment.getCamera())
       const faces = target.selectFaces(screenCoords)
