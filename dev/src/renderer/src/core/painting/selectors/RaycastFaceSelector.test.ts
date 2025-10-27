@@ -1,43 +1,23 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
-import {
-  BufferGeometry,
-  LineBasicMaterial,
-  LineLoop,
-  Mesh,
-  MeshBasicMaterial,
-  OrthographicCamera,
-  PerspectiveCamera,
-  Shape,
-  ShapeGeometry,
-  Vector2
-} from 'three'
+import { OrthographicCamera, PerspectiveCamera, Vector2 } from 'three'
 import RaycastFaceSelector from './RaycastFaceSelector'
 import Test3DEnvironment from '../../utils/tests/Test3DEnvironment'
 import FaceData from '../datastructures/FaceData'
+import Test3DObjectCreator from '../../utils/tests/Test3DObjectCreator'
 
 const viewportSize = new Vector2(800, 600)
 const viewportCenter = viewportSize.clone().multiplyScalar(0.5)
 const viewportRatio = viewportSize.x / viewportSize.y
 let environment: Test3DEnvironment
 
-function createTriangleMesh(x: number, y: number, z: number): Mesh {
-  const shape = new Shape()
-  shape.moveTo(-2, -2)
-  shape.lineTo(0, 2)
-  shape.lineTo(2, -2)
-  shape.lineTo(-2, -2)
-
-  const geometry = new ShapeGeometry(shape, 1)
-  const material = new MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.3 })
-  const mesh = new Mesh(geometry, material)
-
-  mesh.translateX(x)
-  mesh.translateY(y)
-  mesh.translateZ(z)
-  mesh.geometry.computeBoundingBox()
-  return mesh
+function addSelectionHelper(faces: FaceData[]): void {
+  if (!environment.canRenderFrames()) return
+  const helper = Test3DObjectCreator.createSelectionHelper(faces)
+  environment.addHelper(helper)
 }
+const { createTriangleMesh } = Test3DObjectCreator
+
 function addUIRayPoint(screenCoords: Vector2): void {
   if (!environment.canRenderFrames()) return
 
@@ -49,21 +29,6 @@ function addUIRayPoint(screenCoords: Vector2): void {
   style.backgroundColor = 'white'
 
   environment.addUIElement(point, screenCoords)
-}
-function addSelectionHelper(faces: FaceData[]): void {
-  if (!environment.canRenderFrames()) return
-  if (faces.length == 0) return
-
-  const face = faces[0]
-  const points = [face.a.position, face.b.position, face.c.position]
-  const geometry = new BufferGeometry().setFromPoints(points)
-  const material = new LineBasicMaterial({
-    color: 0x00ff00,
-    depthTest: false
-  })
-  const line = new LineLoop(geometry, material)
-  line.computeLineDistances()
-  environment.addHelper(line)
 }
 
 beforeAll(() => {

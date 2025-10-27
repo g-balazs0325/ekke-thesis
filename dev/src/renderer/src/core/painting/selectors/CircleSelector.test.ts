@@ -1,71 +1,22 @@
-import {
-  BufferGeometry,
-  LineBasicMaterial,
-  LineSegments,
-  Mesh,
-  MeshBasicMaterial,
-  PerspectiveCamera,
-  Shape,
-  ShapeGeometry,
-  Vector2,
-  Vector3
-} from 'three'
+import { PerspectiveCamera, Vector2 } from 'three'
 import Test3DEnvironment from '../../utils/tests/Test3DEnvironment'
 import FaceData from '../datastructures/FaceData'
 import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
 import CircleSelector from './CircleSelector'
+import Test3DObjectCreator from '../../utils/tests/Test3DObjectCreator'
 
 const viewportSize = new Vector2(800, 600)
 const viewportCenter = viewportSize.clone().multiplyScalar(0.5)
 const viewportRatio = viewportSize.x / viewportSize.y
 let environment: Test3DEnvironment
 
-// TODO: elmozgatni később
-function createTriangleMesh(x: number, y: number, z: number): Mesh {
-  const shape = new Shape()
-  shape.moveTo(-2, -2)
-  shape.lineTo(0, 2)
-  shape.lineTo(2, -2)
-  shape.lineTo(-2, -2)
-
-  const geometry = new ShapeGeometry(shape, 1)
-  const material = new MeshBasicMaterial({ color: 0x0000ff, transparent: true, opacity: 0.3 })
-  const mesh = new Mesh(geometry, material)
-
-  mesh.translateX(x)
-  mesh.translateY(y)
-  mesh.translateZ(z)
-  mesh.geometry.computeBoundingBox()
-  return mesh
-}
-
-// TODO: elmozgatni később
 function addSelectionHelper(faces: FaceData[]): void {
   if (!environment.canRenderFrames()) return
-  if (faces.length === 0) return
-
-  const geometry = new BufferGeometry()
-  geometry.setFromPoints(getLineSegmentVertices(faces))
-  const material = new LineBasicMaterial({
-    color: 0x00ff00,
-    depthTest: false
-  })
-
-  const line = new LineSegments(geometry, material)
-  environment.addHelper(line)
+  const helper = Test3DObjectCreator.createSelectionHelper(faces)
+  environment.addHelper(helper)
 }
-function getLineSegmentVertices(faces: FaceData[]): Vector3[] {
-  const vertices: Vector3[] = []
-  for (const face of faces) {
-    const { a, b, c } = face
-    vertices.push(a.position.clone(), b.position.clone())
-    vertices.push(b.position.clone(), c.position.clone())
-    vertices.push(c.position.clone(), a.position.clone())
-  }
-
-  return vertices
-}
+const { createTriangleMesh } = Test3DObjectCreator
 
 function addUISelectorCircle(position: Vector2, radius: number): void {
   if (!environment.canRenderFrames()) return
