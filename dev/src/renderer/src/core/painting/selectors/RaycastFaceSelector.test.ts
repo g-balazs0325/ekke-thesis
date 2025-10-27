@@ -13,7 +13,7 @@ import {
   Vector2
 } from 'three'
 import RaycastFaceSelector from './RaycastFaceSelector'
-import Test3DEnvironment from '../../utils/Test3DEnvironment'
+import Test3DEnvironment from '../../utils/tests/Test3DEnvironment'
 import FaceData from '../datastructures/FaceData'
 
 const viewportSize = new Vector2(800, 600)

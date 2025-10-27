@@ -10,7 +10,7 @@ import {
   Vector2,
   Vector3
 } from 'three'
-import Test3DEnvironment from '../../utils/Test3DEnvironment'
+import Test3DEnvironment from '../../utils/tests/Test3DEnvironment'
 import FaceData from '../datastructures/FaceData'
 import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
