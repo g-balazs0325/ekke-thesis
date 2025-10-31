@@ -1,13 +1,12 @@
-import { PerspectiveCamera, Vector2 } from 'three'
-import Test3DEnvironment from '../../utils/tests/Test3DEnvironment'
-import FaceData from '../datastructures/FaceData'
-import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
-import CircleSelector from './CircleSelector'
+import { PerspectiveCamera, Vector2 } from 'three'
+import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
+import Test3DEnvironment from '../../utils/tests/Test3DEnvironment'
 import Test3DObjectCreator from '../../utils/tests/Test3DObjectCreator'
+import CircleSelector from './CircleSelector'
+import FaceData from '../datastructures/FaceData'
 
 const viewportSize = new Vector2(800, 600)
-const viewportCenter = viewportSize.clone().multiplyScalar(0.5)
 const viewportRatio = viewportSize.x / viewportSize.y
 let environment: Test3DEnvironment
 
@@ -98,12 +97,13 @@ describe('Tests for the circle intersection algorithm', () => {
 })
 
 describe('General tests from center of the screen', () => {
+  const viewportCenter = viewportSize.clone().multiplyScalar(0.5)
   const circleRadius = 200
 
   beforeAll(() => {
     environment.clearUI()
-    addUISelectorCircle(viewportCenter, circleRadius)
     environment.setCamera(new PerspectiveCamera(90, viewportRatio, 0.1, 25))
+    addUISelectorCircle(viewportCenter, circleRadius)
   })
 
   test('Both faces are selected when the two faces do not overlap', () => {
@@ -151,11 +151,12 @@ describe('General tests from center of the screen', () => {
 
   test('Backface is not selected', () => {
     const mesh = createTriangleMesh(0, 0, -5)
-    mesh.rotateY(Math.PI)
+    mesh.rotateY((180 * Math.PI) / 180)
     environment.addObject(mesh)
 
     const target = new CircleSelector(environment.getScene(), environment.getCamera(), circleRadius)
     const faces = target.selectFaces(viewportCenter)
+    addSelectionHelper(faces)
     expect(faces).toHaveLength(0)
   })
 })

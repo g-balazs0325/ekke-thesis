@@ -1,18 +1,18 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
-import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
 import { OrthographicCamera, PerspectiveCamera, Vector2 } from 'three'
-import RaycastFaceSelector from './RaycastFaceSelector'
+import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
 import Test3DEnvironment from '../../utils/tests/Test3DEnvironment'
-import FaceData from '../datastructures/FaceData'
 import Test3DObjectCreator from '../../utils/tests/Test3DObjectCreator'
+import RaycastFaceSelector from './RaycastFaceSelector'
+import FaceData from '../datastructures/FaceData'
 
 const viewportSize = new Vector2(800, 600)
-const viewportCenter = viewportSize.clone().multiplyScalar(0.5)
 const viewportRatio = viewportSize.x / viewportSize.y
 let environment: Test3DEnvironment
 
 function addSelectionHelper(faces: FaceData[]): void {
   if (!environment.canRenderFrames()) return
+
   const helper = Test3DObjectCreator.createSelectionHelper(faces)
   environment.addHelper(helper)
 }
@@ -43,6 +43,8 @@ afterEach(() => {
 })
 
 describe('General tests from the center of the screen', () => {
+  const viewportCenter = viewportSize.clone().multiplyScalar(0.5)
+
   beforeAll(() => {
     environment.clearUI()
     environment.setCamera(new PerspectiveCamera(90, viewportRatio, 0.1, 25))
@@ -54,6 +56,7 @@ describe('General tests from the center of the screen', () => {
 
     const target = new RaycastFaceSelector(environment.getScene(), environment.getCamera())
     const faces = target.selectFaces(viewportCenter)
+    addSelectionHelper(faces)
     expect(faces).toHaveLength(0)
   })
 
@@ -118,7 +121,7 @@ describe('Tests with different projections and screen coordinates (800x600)', ()
     { ...cameras.perspective90, count: 0 },
     { ...cameras.orthographic, count: 1 }
   ])(
-    'Selection has $count face(s) when clicked at (400, 200) with $description projection',
+    'Selection has $count face(s) when clicked at (400, 150) with $description projection',
     ({ camera, count }) => {
       environment.setCamera(camera)
       environment.addObject(createTriangleMesh(0, 0, -5))
