@@ -75,7 +75,9 @@ class ManualRenderMode implements RenderModeBase {
     const material = new LineBasicMaterial({ color: HELPER_COLOR, depthTest: false })
     const line = new LineSegments(wireframe, material)
     line.layers.set(HELPER_LAYER)
-    line.translateOnAxis(mesh.position, 1)
+    line.position.copy(mesh.position)
+    line.rotation.copy(mesh.rotation)
+    line.scale.copy(mesh.scale)
     line.updateMatrixWorld()
     scene.add(line)
   }
