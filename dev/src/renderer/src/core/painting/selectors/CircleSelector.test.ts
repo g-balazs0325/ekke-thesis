@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
-import { PerspectiveCamera, Vector2 } from 'three'
+import { OrthographicCamera, PerspectiveCamera, Vector2, Vector3 } from 'three'
 import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
 import Test3DEnvironment from '../../utils/tests/Test3DEnvironment'
 import Test3DObjectCreator from '../../utils/tests/Test3DObjectCreator'
@@ -15,7 +15,7 @@ function addSelectionHelper(faces: FaceData[]): void {
   const helper = Test3DObjectCreator.createSelectionHelper(faces)
   environment.addHelper(helper)
 }
-const { createTriangleMesh } = Test3DObjectCreator
+const { createTriangleMesh, createPlaneMesh } = Test3DObjectCreator
 
 function addUISelectorCircle(position: Vector2, radius: number): void {
   if (!environment.canRenderFrames()) return
@@ -29,6 +29,12 @@ function addUISelectorCircle(position: Vector2, radius: number): void {
   style.border = '1px solid white'
 
   environment.addUIElement(test, position)
+}
+
+function addRotatedPlaneMesh(distance: number): void {
+  const mesh = createPlaneMesh({ x: 0, y: 0, z: -distance }, { x: 8, y: 6 }, { x: 16, y: 12 })
+  mesh.rotateY((10 * Math.PI) / 180)
+  environment.addObject(mesh)
 }
 
 beforeAll(() => {
@@ -159,4 +165,69 @@ describe('General tests from center of the screen', () => {
     addSelectionHelper(faces)
     expect(faces).toHaveLength(0)
   })
+})
+
+describe('Tests with different projections, screen coordinates (800x600) and radii on a slightly-rotated 8x6 plane with 16x12 segments', () => {
+  const cameras = {
+    perspective50: {
+      camera: new PerspectiveCamera(50, viewportRatio, 0.1, 25),
+      description: '50° perspective'
+    },
+    perspective90: {
+      camera: new PerspectiveCamera(90, viewportRatio, 0.1, 25),
+      description: '90° perspective'
+    },
+    orthographic: {
+      camera: new OrthographicCamera(-4, 4, 3, -3, 0.1, 25),
+      description: '8x6 orthographic'
+    }
+  }
+
+  beforeEach(() => {
+    environment.clearUI()
+  })
+
+  test.for([
+    { ...cameras.perspective50, count: 3 },
+    { ...cameras.perspective90, count: 11 },
+    { ...cameras.orthographic, count: 6 } // 'túl közel van' az ortografikus kamerához a plane, 0 db lap kerül kiválasztásra
+  ])(
+    'Selection has $count face(s) when clicked at (290, 260) with 25 radius and $description projection',
+    ({ camera, count }) => {
+      environment.setCamera(camera)
+      addRotatedPlaneMesh(5)
+
+      const screenCoords = new Vector2(290, 260)
+      const radius = 25
+      addUISelectorCircle(screenCoords, radius)
+
+      const target = new CircleSelector(environment.getScene(), environment.getCamera(), radius)
+      const faces = target.selectFaces(screenCoords)
+      addSelectionHelper(faces)
+
+      expect(faces).toHaveLength(count)
+    }
+  )
+
+  test.for([
+    { ...cameras.perspective50, count: 20 },
+    { ...cameras.perspective90, count: 0 },
+    { ...cameras.orthographic, count: 22 }
+  ])(
+    'Selection has $count face(s) when clicked at (725, 510) with 75 radius and $description projection',
+    ({ camera, count }) => {
+      environment.setCamera(camera)
+      addRotatedPlaneMesh(5)
+
+      const screenCoords = new Vector2(725, 510)
+      const radius = 75
+      addUISelectorCircle(screenCoords, radius)
+
+      const target = new CircleSelector(environment.getScene(), environment.getCamera(), radius)
+      const faces = target.selectFaces(screenCoords)
+      addSelectionHelper(faces)
+
+      expect(faces).toHaveLength(count)
+    }
+  )
 })
