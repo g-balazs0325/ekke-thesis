@@ -43,15 +43,16 @@ export default class CircleSelector implements Selector {
   }
 
   private selectUnsortedFaces(clientPosition: Vector2, object: Object3D, output: FaceData[]): void {
-    object.children.forEach((child) => {
+for (const child of object.children) {
       this.selectUnsortedFaces(clientPosition, child, output)
-    })
+    }
 
     const mesh = object as Mesh
     if (!mesh.isMesh) return
     if (!this.frustum.intersectsObject(mesh)) return
 
-    output.push(...FaceData.createArrayFromMesh(mesh))
+    const faces = FaceData.createArrayFromMesh(mesh)
+    for (let i = 0; i < faces.length; i++) output.push(faces[i])
   }
 
   private filterFace(face: FaceData, clientPosition: Vector2): boolean {
