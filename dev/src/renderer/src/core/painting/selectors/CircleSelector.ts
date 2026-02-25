@@ -7,6 +7,7 @@ export default class CircleSelector implements Selector {
   private root: Object3D
   private camera: Camera
 
+  private projMat: Matrix4
   private frustum: Frustum
 
   private radius: number
@@ -21,7 +22,6 @@ export default class CircleSelector implements Selector {
     this.root = root
     this.camera = camera
     this.radius = radius
-    this.frustum = new Frustum()
   }
 
   selectFaces(clientPosition: Vector2): FaceData[] {
@@ -29,21 +29,22 @@ export default class CircleSelector implements Selector {
 
     this.camera.updateMatrix()
     this.camera.updateMatrixWorld()
-    this.frustum = this.frustum.setFromProjectionMatrix(
-      new Matrix4().multiplyMatrices(
-        this.camera.projectionMatrix.clone(),
-        this.camera.matrixWorldInverse.clone()
-      )
+
+    this.projMat = new Matrix4().multiplyMatrices(
+      this.camera.projectionMatrix.clone(),
+      this.camera.matrixWorldInverse.clone()
     )
+    this.frustum = new Frustum().setFromProjectionMatrix(this.projMat)
 
     this.selectUnsortedFaces(clientPosition, this.root, output)
-    output = output.filter((face) => this.filterFace(face, clientPosition))
+    output = output.filter((face) => this.filterFaceOutsideFrustum(face))
+    output = output.filter((face) => this.filterProjectedFaces(face, clientPosition))
 
     return output
   }
 
   private selectUnsortedFaces(clientPosition: Vector2, object: Object3D, output: FaceData[]): void {
-for (const child of object.children) {
+    for (const child of object.children) {
       this.selectUnsortedFaces(clientPosition, child, output)
     }
 
@@ -55,7 +56,41 @@ for (const child of object.children) {
     for (let i = 0; i < faces.length; i++) output.push(faces[i])
   }
 
-  private filterFace(face: FaceData, clientPosition: Vector2): boolean {
+  private filterFaceOutsideFrustum(face: FaceData): boolean {
+    let positions = [face.a.position, face.b.position, face.c.position, face.getPosition()]
+    // 1. fázis: csúcsok és középpont
+    for (const pos of positions) {
+      if (this.frustum.containsPoint(pos)) return true
+    }
+    // 2. fázis: előző koordináták átlaga, iterálva
+    const ITERATIONS = 2
+
+    let jMinimumStart = 0
+    for (let iteration = 0; iteration < ITERATIONS; iteration++) {
+      const averages = []
+
+      for (let i = 0; i < positions.length - 1; i++) {
+        for (let j = Math.max(jMinimumStart, i + 1); j < positions.length; j++) {
+          const pos1 = positions[i]
+          const pos2 = positions[j]
+
+          const avg = new Vector3()
+          avg.copy(pos1).add(pos2)
+          avg.divideScalar(2)
+
+          if (this.frustum.containsPoint(avg)) return true
+          averages.push(avg)
+        }
+      }
+
+      jMinimumStart = positions.length
+      positions = positions.concat(averages)
+    }
+
+    return false
+  }
+
+  private filterProjectedFaces(face: FaceData, clientPosition: Vector2): boolean {
     const vertexNdcCoords: Vector3[] = [
       face.a.position.clone().project(this.camera),
       face.b.position.clone().project(this.camera),
@@ -63,9 +98,7 @@ for (const child of object.children) {
     ]
 
     return (
-      this.filterBackface(face) &&
-      this.filterDepths(vertexNdcCoords) && // experimental fix
-      this.filterFaceOutsideCircle(clientPosition, vertexNdcCoords)
+      this.filterBackface(face) && this.filterFaceOutsideCircle(clientPosition, vertexNdcCoords)
     )
   }
 
@@ -75,14 +108,6 @@ for (const child of object.children) {
 
     const cameraNormal = this.camera.getWorldDirection(new Vector3())
     return face.getNormal().clone().dot(cameraNormal) < 0
-  }
-
-  private filterDepths(vertexNdcCoords: Vector3[]): boolean {
-    for (let i = 0; i < vertexNdcCoords.length; i++) {
-      const vertex = vertexNdcCoords[i]
-      if (vertex.z <= 0 || vertex.z > 3) return false
-    }
-    return true
   }
 
   private filterFaceOutsideCircle(clientPosition: Vector2, vertexNdcCoords: Vector3[]): boolean {
