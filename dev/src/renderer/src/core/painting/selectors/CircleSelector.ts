@@ -103,11 +103,16 @@ export default class CircleSelector implements Selector {
   }
 
   private filterBackface(face: FaceData): boolean {
-    const cameraWorldPos = new Vector3()
-    this.camera.getWorldPosition(cameraWorldPos)
+    const faceCenterNdc = face.getPosition().project(this.camera)
 
-    const cameraNormal = this.camera.getWorldDirection(new Vector3())
-    return face.getNormal().clone().dot(cameraNormal) < 0
+    const centerNdcNear = faceCenterNdc.clone().setZ(-1)
+    const centerNdcFar = faceCenterNdc.clone().setZ(1)
+
+    const projectionRayStart = centerNdcNear.unproject(this.camera)
+    const projectionRayEnd = centerNdcFar.unproject(this.camera)
+
+    const rayNormal = projectionRayEnd.sub(projectionRayStart).normalize()
+    return rayNormal.dot(face.getNormal()) < 0
   }
 
   private filterFaceOutsideCircle(clientPosition: Vector2, vertexNdcCoords: Vector3[]): boolean {
