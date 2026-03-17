@@ -62,22 +62,22 @@ export default class FaceData {
   }
 
   static createArrayFromMesh(mesh: Mesh): FaceData[] {
-    const faces: FaceData[] = []
+    let faces: FaceData[] = []
     const geometry = mesh.geometry
 
     const localToWorldMatrix = mesh.matrixWorld.clone()
     if (!Array.isArray(mesh.material)) {
       const material = mesh.material as Material
 
-      faces.push(...this.createFacesFromIndices(geometry, material, localToWorldMatrix))
+      faces = faces.concat(this.createFacesFromIndices(geometry, material, localToWorldMatrix))
     } else {
       const materials = mesh.material as Material[]
       const groups = geometry.groups
       groups.forEach((group) => {
         const material = materials[group.materialIndex]
         const end = group.start + group.count
-        faces.push(
-          ...this.createFacesFromIndices(geometry, material, localToWorldMatrix, group.start, end)
+        faces = faces.concat(
+          this.createFacesFromIndices(geometry, material, localToWorldMatrix, group.start, end)
         )
       })
     }
