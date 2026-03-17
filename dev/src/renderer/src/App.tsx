@@ -206,7 +206,7 @@ class App extends React.Component {
     folderHdri
       .add(this.state, 'useHdriAsBackground')
       .name('Use HDRI as background')
-      .onChange((value: boolean) => this.setState({ hdriBackground: value }))
+      .onChange((value: boolean) => this.setState({ useHdriAsBackground: value }))
     folderHdri
       .add(this.state, 'wireframe')
       .name('Wireframe')
