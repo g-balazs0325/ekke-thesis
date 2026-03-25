@@ -28,6 +28,7 @@ export default class CircleSelectorGUI extends SelectorGUI {
     style.transform = 'translate(-50%, -50%)'
     style.borderRadius = '50%'
     style.border = '1px solid white'
+    style.boxShadow = '0 0 2px 0 black'
 
     this.circle = circle
     this.getOverlayDiv().appendChild(this.circle)
