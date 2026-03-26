@@ -26,6 +26,7 @@ import ParametricGeometry, { ParametricFunction } from './components/geometries/
 import { compile, evaluate } from 'mathjs'
 import SelectorGUI from './core/painting/selectors/gui/SelectorGUI'
 import SelectorGUIFactory from './core/painting/selectors/gui/SelectorGUIFactory'
+import CanvasOverlay from './components/canvas/CanvasOverlay'
 
 enum HdriEnum {
   Studio = 'Studio',
@@ -177,15 +178,9 @@ class App extends React.Component {
             </meshPhysicalMaterial>
           </mesh>
         </Canvas>
-        <div
-          ref={(ref) => {
+        <CanvasOverlay
+          ref={(ref: HTMLDivElement) => {
             this.overlayDivRef = ref
-          }}
-          style={{
-            pointerEvents: 'none',
-            position: 'absolute',
-            left: '0px',
-            top: '0px'
           }}
         />
       </React.StrictMode>
