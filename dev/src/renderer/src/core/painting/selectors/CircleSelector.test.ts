@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest'
-import { OrthographicCamera, PerspectiveCamera, Vector2, Vector3 } from 'three'
+import { OrthographicCamera, PerspectiveCamera, Vector2 } from 'three'
 import CoordinateUtils, { ConstantCoordinateUtilBounds } from '../../utils/CoordinateUtils'
 import Test3DEnvironment from '../../utils/tests/Test3DEnvironment'
 import Test3DObjectCreator from '../../utils/tests/Test3DObjectCreator'
