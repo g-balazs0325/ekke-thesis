@@ -24,6 +24,9 @@ import CircleSelector from './core/painting/selectors/CircleSelector'
 import Selector from './core/painting/selectors/Selector'
 import ParametricGeometry, { ParametricFunction } from './components/geometries/ParametricGeometry'
 import { compile, evaluate } from 'mathjs'
+import SelectorGUI from './core/painting/selectors/gui/SelectorGUI'
+import SelectorGUIFactory from './core/painting/selectors/gui/SelectorGUIFactory'
+import CanvasOverlay from './components/canvas/CanvasOverlay'
 
 enum HdriEnum {
   Studio = 'Studio',
@@ -77,6 +80,10 @@ class App extends React.Component {
   public roughnessIntensity = 255
   public metalnessIntensity = 0
   private gui: GUI
+
+  private overlayDivRef: HTMLDivElement
+  private selectorGUI: SelectorGUI
+  private selectorControllersRoot: GUI
 
   private parametricProps = {
     xFn: 'cos(u) * sin(v)',
@@ -136,6 +143,7 @@ class App extends React.Component {
           tabIndex={0}
           onCreated={this.onSceneCreated.bind(this)}
           onClick={this.onClick.bind(this)}
+          onMouseMove={this.onMouseMove.bind(this)}
         >
           <React.Suspense fallback={null}>
             <Environment
@@ -170,6 +178,11 @@ class App extends React.Component {
             </meshPhysicalMaterial>
           </mesh>
         </Canvas>
+        <CanvasOverlay
+          ref={(ref: HTMLDivElement) => {
+            this.overlayDivRef = ref
+          }}
+        />
       </React.StrictMode>
     )
   }
@@ -180,6 +193,7 @@ class App extends React.Component {
 
     this.initializePaintingObjects()
     this.initializeGUI()
+    this.initializeSelectorGUI()
   }
 
   private initializePaintingObjects(): void {
@@ -189,7 +203,8 @@ class App extends React.Component {
     ])
 
     this.currentSelectorName = SelectorEnum.Raycast
-    this.painter = new FacesPainter(this.selectors.get(this.currentSelectorName), this.albedoColor)
+    const selector = this.selectors.get(this.currentSelectorName)
+    this.painter = new FacesPainter(selector, this.albedoColor)
   }
 
   private initializeGUI(): void {
@@ -216,7 +231,14 @@ class App extends React.Component {
     folderBrush
       .add(this, 'currentSelectorName', [...this.selectors.keys()])
       .name('Selector')
-      .onChange((value: SelectorEnum) => this.painter.setSelector(this.selectors.get(value)))
+      .onChange((value: SelectorEnum) => {
+        const newSelector = this.selectors.get(value)
+        this.painter.setSelector(newSelector)
+        this.changeSelectorGUI(newSelector)
+      })
+
+    this.selectorControllersRoot = folderBrush.addFolder('Selector options')
+
     folderBrush.addColor(this, 'albedoColor').name('Albedo Color')
     folderBrush.add(this as App, 'roughnessIntensity', 0, 255, 1).name('Roughness')
     folderBrush.add(this as App, 'metalnessIntensity', 0, 255, 1).name('Metalness')
@@ -236,6 +258,24 @@ class App extends React.Component {
     folderMeshV.add(this.parametricProps, 'vSegments', 1).name('Segments')
 
     folderMesh.add(this as App, 'regenerateMesh').name('Regenerate')
+  }
+
+  private initializeSelectorGUI(): void {
+    const selector = this.painter.getSelector()
+    this.changeSelectorGUI(selector)
+  }
+
+  private changeSelectorGUI(newSelector: Selector): void {
+    const oldSelectorGUI = this.selectorGUI
+    oldSelectorGUI?.onUnselected()
+
+    const newSelectorGUI = SelectorGUIFactory.create(
+      newSelector,
+      this.overlayDivRef,
+      this.selectorControllersRoot
+    )
+    newSelectorGUI.onSelected()
+    this.selectorGUI = newSelectorGUI
   }
 
   public regenerateMesh(): void {
@@ -297,6 +337,10 @@ class App extends React.Component {
     painter.setColor(new Color(valueM, valueM, valueM))
     painter.paint<MeshPhysicalMaterial>('metalnessMap')
     painter.endPainting()
+  }
+
+  private onMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>): void {
+    this.selectorGUI?.onMouseMove(e.clientX, e.clientY)
   }
 
   private throwOnBadExpression(readableFieldName: string, expr: string, scope: object = {}): void {
