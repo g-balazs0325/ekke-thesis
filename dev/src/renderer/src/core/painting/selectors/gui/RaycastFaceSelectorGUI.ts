@@ -1,11 +1,16 @@
+import { GUI } from 'lil-gui'
 import RaycastFaceSelector from '../RaycastFaceSelector'
 import SelectorGUI from './SelectorGUI'
 
 export default class RaycastFaceSelectorGUI extends SelectorGUI {
   private selector: RaycastFaceSelector
 
-  public constructor(selector: RaycastFaceSelector, overlayDiv: HTMLDivElement) {
-    super(overlayDiv)
+  public constructor(
+    selector: RaycastFaceSelector,
+    overlayDiv: HTMLDivElement,
+    interfaceRoot: GUI
+  ) {
+    super(overlayDiv, interfaceRoot)
     this.selector = selector
   }
 
