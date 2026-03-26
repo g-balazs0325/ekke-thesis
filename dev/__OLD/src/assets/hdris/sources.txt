@@ -1,5 +1,0 @@
-PolyHaven (https://polyhaven.com):
-- meadow_2_1k.hdr: "Meadow 2" by Sergej Majboroda (https://polyhaven.com/a/meadow_2)
-- studio_small_03_1k.hdr: "Studio Small 03" by Greg Zaal (https://polyhaven.com/a/studio_small_03)
-- kloofendal_48d_partly_cloudy_puresky_1k.hdr: "Kloofendal 48d Partly Cloudy (Pure Sky)" by Greg Zaal, edited by Jarod Guest (https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky)
-- cobblestone_street_night_1k.hdr: "Cobblestone Street Night" by Greg Zaal, backplates by Jenelle van Heerden (https://polyhaven.com/a/cobblestone_street_night)
