@@ -27,6 +27,7 @@ import { compile, evaluate } from 'mathjs'
 import SelectorGUI from './core/painting/selectors/gui/SelectorGUI'
 import SelectorGUIFactory from './core/painting/selectors/gui/SelectorGUIFactory'
 import CanvasOverlay from './components/canvas/CanvasOverlay'
+import { OrbitControls as ThreeOrbitControls } from 'three-stdlib'
 
 enum HdriEnum {
   Studio = 'Studio',
@@ -75,6 +76,7 @@ class App extends React.Component {
 
   private scene: Scene
   private camera: Camera
+  private orbitControlsRef: ThreeOrbitControls
 
   public albedoColor: Color = new Color('blue')
   public roughnessIntensity = 255
@@ -159,6 +161,9 @@ class App extends React.Component {
               MIDDLE: MOUSE.DOLLY,
               RIGHT: MOUSE.ROTATE
             }}
+            ref={(ref) => {
+              this.orbitControlsRef = ref
+            }}
           />
           <ambientLight intensity={0.5} />
 
@@ -209,6 +214,10 @@ class App extends React.Component {
 
   private initializeGUI(): void {
     this.gui = new GUI()
+
+    const folderCamera = this.gui.addFolder('Camera')
+    folderCamera.add(this as App, 'showCameraControls').name('Show controls')
+    folderCamera.add(this as App, 'resetCamera').name('Reset camera')
 
     const folderHdri = this.gui.addFolder('Render options')
     folderHdri
@@ -276,6 +285,19 @@ class App extends React.Component {
     )
     newSelectorGUI.onSelected()
     this.selectorGUI = newSelectorGUI
+  }
+
+  public showCameraControls(): void {
+    const controls =
+      'Press LMB: Paint\n' +
+      'Hold RMB: Rotate camera\n' +
+      'Mouse wheel/Hold MMB: Zoom camera\n' +
+      'Hold Shift+RMB: Move camera'
+    window.dialog.showInfo('Camera controls', controls)
+  }
+
+  public resetCamera(): void {
+    this.orbitControlsRef?.reset()
   }
 
   public regenerateMesh(): void {

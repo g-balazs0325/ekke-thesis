@@ -1,5 +1,6 @@
 export interface Dialog {
   showError: (title: string, message: string) => void
+  showInfo: (title: string, message: string) => void
 }
 
 declare global {
