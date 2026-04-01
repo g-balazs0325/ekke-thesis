@@ -215,9 +215,9 @@ class App extends React.Component {
   private initializeGUI(): void {
     this.gui = new GUI()
 
-    const folderControls = this.gui.addFolder('Controls')
-    folderControls.add(this as App, 'showControls').name('Show controls')
-    folderControls.add(this as App, 'resetCamera').name('Reset camera')
+    const folderCamera = this.gui.addFolder('Camera')
+    folderCamera.add(this as App, 'showCameraControls').name('Show controls')
+    folderCamera.add(this as App, 'resetCamera').name('Reset camera')
 
     const folderHdri = this.gui.addFolder('Render options')
     folderHdri
@@ -287,13 +287,13 @@ class App extends React.Component {
     this.selectorGUI = newSelectorGUI
   }
 
-  public showControls(): void {
+  public showCameraControls(): void {
     const controls =
       'Press LMB: Paint\n' +
       'Hold RMB: Rotate camera\n' +
       'Mouse wheel/Hold MMB: Zoom camera\n' +
       'Hold Shift+RMB: Move camera'
-    window.dialog.showInfo('Controls', controls)
+    window.dialog.showInfo('Camera controls', controls)
   }
 
   public resetCamera(): void {
