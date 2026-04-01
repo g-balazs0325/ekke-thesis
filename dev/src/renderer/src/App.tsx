@@ -210,6 +210,9 @@ class App extends React.Component {
   private initializeGUI(): void {
     this.gui = new GUI()
 
+    const folderControls = this.gui.addFolder('Controls')
+    folderControls.add(this as App, 'showControls').name('Show controls')
+
     const folderHdri = this.gui.addFolder('Render options')
     folderHdri
       .add(this, 'currentHdriName', [...this.hdris.keys()])
@@ -276,6 +279,15 @@ class App extends React.Component {
     )
     newSelectorGUI.onSelected()
     this.selectorGUI = newSelectorGUI
+  }
+
+  public showControls(): void {
+    const controls =
+      'Press LMB: Paint\n' +
+      'Hold RMB: Rotate camera\n' +
+      'Mouse wheel/Hold MMB: Zoom camera\n' +
+      'Hold Shift+RMB: Move camera'
+    window.dialog.showInfo('Controls', controls)
   }
 
   public regenerateMesh(): void {
